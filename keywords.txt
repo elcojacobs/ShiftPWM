@@ -1,0 +1,29 @@
+#######################################
+# Syntax Coloring Map ShiftPWM
+#######################################
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+ShiftPWM	KEYWORD1
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+Start	KEYWORD2
+SetAmountOfRegisters	KEYWORD2
+PrintInterruptLoad	KEYWORD2
+OneByOneSlow	KEYWORD2
+OneByOneFast	KEYWORD2
+SetOne	KEYWORD2
+SetAll	KEYWORD2
+SetGroupOf2	KEYWORD2
+SetGroupOf3	KEYWORD2
+SetGroupOf4	KEYWORD2
+SetGroupOf5	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+ShiftPWM_dataPin	LITERAL1
+ShiftPWM_clockPin	LITERAL1
+ShiftPWM_latchPin	LITERAL1
+ShiftPWM_invertOutputs	LITERAL1
