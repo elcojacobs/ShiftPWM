@@ -54,11 +54,11 @@ bool CShiftPWM::IsValidPin(int pin){
 		return 1;
 	}
 	else{
-		Serial.print("Error: Trying to write duty cycle of pin ");
+		Serial.print(F("Error: Trying to write duty cycle of pin "));
 		Serial.print(pin); 		
-		Serial.print(" , while number of outputs is ");
+		Serial.print(F(" , while number of outputs is "));
 		Serial.print(m_amountOfOutputs); 
-		Serial.print(" , numbered 0-");
+		Serial.print(F(" , numbered 0-"));
 		Serial.println(m_amountOfOutputs-1); 
 		delay(1000);
 		return 0;
@@ -154,7 +154,7 @@ void CShiftPWM::SetAmountOfRegisters(unsigned char newAmount){
 		// New value would result in deadlock, keep old values and print an error message
 		m_amountOfRegisters = oldAmount;
 		m_amountOfOutputs=m_amountOfRegisters*8;
-		Serial.println("Amount of registers is not increased, because load would become too high");
+		Serial.println(F("Amount of registers is not increased, because load would become too high"));
 		sei();
 	}
 }
@@ -167,11 +167,11 @@ bool CShiftPWM::LoadNotTooHigh(void){
 	float load = interruptDuration*interruptFrequency/F_CPU;
 
 	if(load > 0.9){
-		Serial.print("New interrupt duration ="); Serial.print(interruptDuration); Serial.println("clock cycles");
-		Serial.print("New interrupt frequency ="); Serial.print(interruptFrequency); Serial.println("Hz");
-		Serial.print("New interrupt load would be ");
+		Serial.print(F("New interrupt duration =")); Serial.print(interruptDuration); Serial.println(F("clock cycles"));
+		Serial.print(F("New interrupt frequency =")); Serial.print(interruptFrequency); Serial.println(F("Hz"));
+		Serial.print(F("New interrupt load would be "));
 		Serial.print(load);
-		Serial.println(" , which is too high.");
+		Serial.println(F(" , which is too high."));
 		return 0;
 	}
 	else{
@@ -195,7 +195,7 @@ void CShiftPWM::Start(int ledFrequency, unsigned char maxBrightness){
 		}
 	}
 	else{
-		Serial.println("Interrupts are disabled because load is too high.");
+		Serial.println(F("Interrupts are disabled because load is too high."));
 		cli(); //Disable interrupts
 	}
 }
@@ -295,7 +295,7 @@ void CShiftPWM::PrintInterruptLoad(void){
 		}
 		else{
 			// interrupt is disabled
-			Serial.println("Interrupt is disabled.");
+			Serial.println(F("Interrupt is disabled."));
 			return;
 		}
 	}
@@ -305,7 +305,7 @@ void CShiftPWM::PrintInterruptLoad(void){
 		}
 		else{
 			// interrupt is disabled
-			Serial.println("Interrupt is disabled.");
+			Serial.println(F("Interrupt is disabled."));
 			return;
 		}
 	}
@@ -346,24 +346,24 @@ void CShiftPWM::PrintInterruptLoad(void){
 	cycles_per_int = load*(F_CPU/interrupt_frequency);
 
 	//Ready to print information
-	Serial.print("Load of interrupt: ");   Serial.println(load,10); 
-	Serial.print("Clock cycles per interrupt: ");   Serial.println(cycles_per_int); 
-	Serial.print("Interrupt frequency: "); Serial.print(interrupt_frequency);   Serial.println(" Hz");
-	Serial.print("PWM frequency: "); Serial.print(interrupt_frequency/(m_maxBrightness+1)); Serial.println(" Hz");
+	Serial.print(F("Load of interrupt: "));   Serial.println(load,10); 
+	Serial.print(F("Clock cycles per interrupt: "));   Serial.println(cycles_per_int); 
+	Serial.print(F("Interrupt frequency: ")); Serial.print(interrupt_frequency);   Serial.println(F(" Hz"));
+	Serial.print(F("PWM frequency: ")); Serial.print(interrupt_frequency/(m_maxBrightness+1)); Serial.println(F(" Hz"));
 
 	if(m_timer==1){   
-		Serial.println("Timer1 in use for highest precision."); 
-		Serial.println("Include servo.h to use timer2.");
-		Serial.print("OCR1A: "); Serial.println(OCR1A, DEC);
-		Serial.print("Prescaler: "); Serial.println(m_prescaler);
+		Serial.println(F("Timer1 in use for highest precision.")); 
+		Serial.println(F("Include servo.h to use timer2."));
+		Serial.print(F("OCR1A: ")); Serial.println(OCR1A, DEC);
+		Serial.print(F("Prescaler: ")); Serial.println(m_prescaler);
 
 		//Re-enable Interrupt	
 		bitSet(TIMSK1,OCIE1A); 
 	}
 	else if(m_timer==2){
-		Serial.println("Timer2 in use, because Timer1 is used by servo library.");
-		Serial.print("OCR2A: "); Serial.println(OCR2A, DEC);
-		Serial.print("Presclaler: "); Serial.println(m_prescaler);  
+		Serial.println(F("Timer2 in use, because Timer1 is used by servo library."));
+		Serial.print(F("OCR2A: ")); Serial.println(OCR2A, DEC);
+		Serial.print(F("Presclaler: ")); Serial.println(m_prescaler);  
 
 		//Re-enable Interrupt	
 		bitSet(TIMSK2,OCIE2A); 
