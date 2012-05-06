@@ -30,7 +30,7 @@
  * A higher interrupt load will mean less computional power for your main program,
  * so try to keep it as low as possible and at least below 0.9.
  * 
- * The following functions are used:
+ * The following functions are available:
  * 
  * ShiftPWM.Start(int ledFrequency, int max_Brightness)		Enable ShiftPWM with desired frequency and brightness levels
  * ShiftPWM.SetAmountOfRegisters(int newAmount)			Set or change the amount of output registers. Can be changed at runtime.
@@ -46,15 +46,20 @@
  * ShiftPWM.SetGroupOf5(int group, unsigned char v0, unsigned char v1, unsigned char v2, unsigned char v3, unsigned char v4);
  * 		--> Set a group of outputs to the given values. SetGroupOf3 is useful for RGB LED's. Each LED will be a group.
  * 
+ * ShiftPWM.SetRGB(int led, unsigned char r,unsigned char g,unsigned char b);      // Set one LED to an RGB value
+ * ShiftPWM.SetAllRGB(unsigned char r,unsigned char g,unsigned char b);            // Set all LED's to an RGB value
+ * ShiftPWM.SetHSV(int led, unsigned int hue, unsigned int sat, unsigned int val); // Set one LED to an HSV value
+ * ShiftPWM.SetAllHSV(unsigned int hue, unsigned int sat, unsigned int val);       // Set one LED to an HSV value
+ * Note: the RGB and HSV functions assume that the outputs are RGBRGBRGB... without gaps. More flexibility in setup will be added soon.
+ *
  * Debug information for wrong input to functions is also send to the serial port,
  * so check the serial port when you run into problems.
  * 
- * ShiftPWM v1.04, (c) Elco Jacobs, April 2012.
+ * ShiftPWM v1.05, (c) Elco Jacobs, May 2012.
  * 
  *****************************************************************************/
 //#include <Servo.h>
 #include <SPI.h>
-#include "hsv2rgb.h"
 
 // Clock and data pins are pins from the hardware SPI, you cannot choose them yourself.
 // Data pin is MOSI (Arduino: 11, Arduino Mega: 51, Teensy 2.0: 2, Teensy 2.0++: 22) 
@@ -74,6 +79,7 @@ const bool ShiftPWM_invertOutputs = 0;
 unsigned char maxBrightness = 255;
 unsigned char pwmFrequency = 75;
 int numRegisters = 6;
+int numRGBleds = numRegisters*8/3;
 
 void setup()   {                
   pinMode(ShiftPWM_latchPin, OUTPUT);
@@ -99,7 +105,7 @@ void loop()
   // Print information about the interrupt frequency, duration and load on your program
   ShiftPWM.PrintInterruptLoad();
 
-  // Fade in and fade out all outputs one by one fast. Usefull for testing your circuit
+  // Fade in and fade out all outputs one by one fast. Usefull for testing your hardware. Use OneByOneSlow when this is going to fast.
   ShiftPWM.OneByOneFast();
 
   // Fade in all outputs
@@ -113,6 +119,7 @@ void loop()
     delay(20);
   }
 
+
   // Fade in and out 2 outputs at a time
   for(int output=0;output<numRegisters*8-1;output++){
     ShiftPWM.SetAll(0);
@@ -123,31 +130,98 @@ void loop()
     }
   }
 
-  //  A moving rainbow for RGB leds:
-  rgbLedRainbow(numRegisters*8/3, 5, 3, maxBrightness, numRegisters*8/3); // Fast, over all LED's
-  rgbLedRainbow(numRegisters*8/3, 10, 3, maxBrightness, numRegisters*8/3*4); //slower, wider than the number of LED's
+  // Hue shift all LED's
+  for(int hue = 0; hue<360; hue++){
+    ShiftPWM.SetAllHSV(hue, 255, 255); 
+    delay(50);
+  }
 
-  // Fade in and fade out all outputs slowly. Usefull for testing your circuit
-  ShiftPWM.OneByOneSlow();  
+  // Alternate LED's in 6 different colors
+  for(int shift=0;shift<6;shift++){
+    for(int led=0; led<numRGBleds; led++){
+      switch((led+shift)%6){
+      case 0:
+        ShiftPWM.SetRGB(led,255,0,0);    // red
+        break;
+      case 1:
+        ShiftPWM.SetRGB(led,0,255,0);    // green
+        break;
+      case 2:
+        ShiftPWM.SetRGB(led,0,0,255);    // blue
+        break;
+      case 3:
+        ShiftPWM.SetRGB(led,255,128,0);  // orange
+        break;
+      case 4:
+        ShiftPWM.SetRGB(led,0,255,255);  // turqoise
+        break;
+      case 5:
+        ShiftPWM.SetRGB(led,255,0,255);  // purple
+        break;
+      }
+    }
+    delay(2000);
+  }
+
+  // Update random LED to random color. Funky!
+  for(int i=0;i<1000;i++){
+    ShiftPWM.SetHSV(random(numRGBleds),random(255),255,255);
+    delay(15);
+  }
+
+
+  // Immitate a VU meter
+  int peak=0;
+  int prevPeak=0;
+
+  int currentLevel = 0;
+  for(int i=0;i<40;i++){
+    prevPeak = peak;
+    while(abs(peak-prevPeak)<5){
+      peak =  random(numRGBleds); // pick a new peak value that differs at least 5 from previous peak
+    }
+    Serial.println(peak);
+    // animate to new top
+    while(currentLevel!=peak){
+      if(currentLevel<peak){
+        currentLevel++;
+      }
+      else{
+        currentLevel--;
+      }
+      for(int led=0;led<numRGBleds;led++){
+        if(led<=currentLevel){
+          int hue = (numRGBleds-1-led)*120/numRGBleds; // From green to red
+          ShiftPWM.SetHSV(led,hue,255,255); 
+        }
+        else{
+          ShiftPWM.SetRGB(led,0,0,0);
+        }
+      }
+      delay(3*(numRGBleds-currentLevel)); // go slower near the top
+    }
+  }
+
+  //  A moving rainbow for RGB leds:
+  rgbLedRainbow(numRGBleds, 5, 3, numRegisters*8/3); // Fast, over all LED's
+  rgbLedRainbow(numRGBleds, 10, 3, numRegisters*8/3*4); //slower, wider than the number of LED's
 }
 
-void rgbLedRainbow(int numRGBLeds, int delayVal, int numCycles, int maxBrightness, int rainbowWidth){
-  // Displays a rainbow spread over a few LED's (numRGBLeds), which shifts in hue. The rainbow can be wider then the real number of LED's.
-  int hue, sat, val; 
-  unsigned char red, green, blue;
+void rgbLedRainbow(int numRGBLeds, int delayVal, int numCycles, int rainbowWidth){
+  // Displays a rainbow spread over a few LED's (numRGBLeds), which shifts in hue. 
+  // The rainbow can be wider then the real number of LED's.
 
   ShiftPWM.SetAll(0);
   for(int cycle=0;cycle<numCycles;cycle++){ // loop through the hue shift a number of times (numCycles)
     for(int colorshift=0;colorshift<360;colorshift++){ // Shift over full color range (like the hue slider in photoshop)
       for(int led=0;led<numRGBLeds;led++){ // loop over all LED's
-        hue = ((led)*360/(rainbowWidth-1)+colorshift)%360; // Set hue from 0 to 360 from first to last led and shift the hue
-        sat = 255;
-        val = 255;
-        hsv2rgb(hue, sat, val, &red, &green, &blue, maxBrightness); // convert hsv to rgb values
-        ShiftPWM.SetGroupOf3(led, red, green, blue); // write the rgb values
+        int hue = ((led)*360/(rainbowWidth-1)+colorshift)%360; // Set hue from 0 to 360 from first to last led and shift the hue
+        ShiftPWM.SetHSV(led, hue, 255, 255); // write the HSV values, with saturation and value at maximum
       }
       delay(delayVal); // this delay value determines the speed of hue shift
     } 
   }  
 }
+
+
 

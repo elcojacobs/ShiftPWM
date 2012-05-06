@@ -44,6 +44,12 @@ public:
 	void SetGroupOf4(int group, unsigned char v0, unsigned char v1, unsigned char v2, unsigned char v3);
 	void SetGroupOf5(int group, unsigned char v0, unsigned char v1, unsigned char v2, unsigned char v3, unsigned char v4);
 
+	void SetRGB(int led, unsigned char r,unsigned char g,unsigned char b);
+	void SetAllRGB(unsigned char r,unsigned char g,unsigned char b);
+	void SetHSV(int led, unsigned int hue, unsigned int sat, unsigned int val);
+	void SetAllHSV(unsigned int hue, unsigned int sat, unsigned int val);
+
+
 private:
 	void OneByOne_core(int delaytime);
 	bool IsValidPin(int pin);

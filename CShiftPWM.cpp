@@ -24,9 +24,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "CShiftPWM.h"
 #if defined(ARDUINO) && ARDUINO >= 100
-  #include <Arduino.h>
+#include <Arduino.h>
 #else
-  #include <WProgram.h>
+#include <WProgram.h>
 #endif
 
 #include "CShiftPWM.h"
@@ -109,6 +109,85 @@ void CShiftPWM::SetGroupOf5(int group, unsigned char v0,unsigned char v1,unsigne
 		m_PWMValues[group*5+2]=v2;
 		m_PWMValues[group*5+3]=v3;
 		m_PWMValues[group*5+4]=v4;
+	}
+}
+
+void CShiftPWM::SetRGB(int led, unsigned char r,unsigned char g,unsigned char b){
+	if(IsValidPin(led*3+2) ){
+		m_PWMValues[led*3]=( (unsigned int) r * m_maxBrightness)>>8;
+		m_PWMValues[led*3+1]=( (unsigned int) g * m_maxBrightness)>>8;
+		m_PWMValues[led*3+2]=( (unsigned int) b * m_maxBrightness)>>8;
+	}
+}
+
+void CShiftPWM::SetAllRGB(unsigned char r,unsigned char g,unsigned char b){
+	for(int k=0 ; (k+2) < m_amountOfOutputs; k+=3){
+		m_PWMValues[k]=( (unsigned int) r * m_maxBrightness)>>8;
+		m_PWMValues[k+1]=( (unsigned int) g * m_maxBrightness)>>8;
+		m_PWMValues[k+2]=( (unsigned int) b * m_maxBrightness)>>8;
+	}
+}
+
+void CShiftPWM::SetHSV(int led, unsigned int hue, unsigned int sat, unsigned int val){
+	if(IsValidPin(led*3+2) ){
+		unsigned char r,g,b;
+		unsigned int H_accent = hue/60;
+		unsigned int bottom = ((255 - sat) * val)>>8;
+		unsigned int top = val;
+		unsigned char rising  = ((top-bottom)  *(hue%60   )  )  /  60  +  bottom;
+		unsigned char falling = ((top-bottom)  *(60-hue%60)  )  /  60  +  bottom;
+
+		switch(H_accent) {
+		case 0:
+			r = top;
+			g = rising;
+			b = bottom;
+			break;
+
+		case 1:
+			r = falling;
+			g = top;
+			b = bottom;
+			break;
+
+		case 2:
+			r = bottom;
+			g = top;
+			b = rising;
+			break;
+
+		case 3:
+			r = bottom;
+			g = falling;
+			b = top;
+			break;
+
+		case 4:
+			r = rising;
+			g = bottom;
+			b = top;
+			break;
+
+		case 5:
+			r = top;
+			g = bottom;
+			b = falling;
+			break;
+		}  
+		m_PWMValues[led*3]=( (unsigned int) r * m_maxBrightness)>>8;
+		m_PWMValues[led*3+1]=( (unsigned int) g * m_maxBrightness)>>8;
+		m_PWMValues[led*3+2]=( (unsigned int) b * m_maxBrightness)>>8;;
+	}
+}
+
+void CShiftPWM::SetAllHSV(unsigned int hue, unsigned int sat, unsigned int val){
+	// Set the first LED
+	SetHSV(0, hue, sat, val);
+	// Copy RGB values to other LED's.
+	for(int k=3 ; (k+2) < m_amountOfOutputs; k+=3){
+		m_PWMValues[k]=m_PWMValues[0];
+		m_PWMValues[k+1]=m_PWMValues[1];
+		m_PWMValues[k+2]=m_PWMValues[2];
 	}
 }
 
