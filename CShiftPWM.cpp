@@ -78,45 +78,45 @@ void CShiftPWM::SetAll(unsigned char value){
 	}   
 }
 
-void CShiftPWM::SetGroupOf2(int group, unsigned char v0,unsigned char v1){
-	if(IsValidPin(group*2+1) ){
-		m_PWMValues[group*2]=v0;
-		m_PWMValues[group*2+1]=v1;
+void CShiftPWM::SetGroupOf2(int group, unsigned char v0,unsigned char v1, int offset){
+	if(IsValidPin(group*2+offset+1) ){
+		m_PWMValues[group*2+offset]=v0;
+		m_PWMValues[group*2+offset+1]=v1;
 	}
 }
 
-void CShiftPWM::SetGroupOf3(int group, unsigned char v0,unsigned char v1,unsigned char v2){
-	if(IsValidPin(group*3+2) ){
-		m_PWMValues[group*3]=v0;
-		m_PWMValues[group*3+1]=v1;
-		m_PWMValues[group*3+2]=v2;
+void CShiftPWM::SetGroupOf3(int group, unsigned char v0,unsigned char v1,unsigned char v2, int offset){
+	if(IsValidPin(group*3+offset+2) ){
+		m_PWMValues[group*3+offset]=v0;
+		m_PWMValues[group*3+offset+1]=v1;
+		m_PWMValues[group*3+offset+2]=v2;
 	}
 }
 
-void CShiftPWM::SetGroupOf4(int group, unsigned char v0,unsigned char v1,unsigned char v2,unsigned char v3){
-	if(IsValidPin(group*4+3) ){
-		m_PWMValues[group*4]=v0;
-		m_PWMValues[group*4+1]=v1;
-		m_PWMValues[group*4+2]=v2;
-		m_PWMValues[group*4+3]=v3;
+void CShiftPWM::SetGroupOf4(int group, unsigned char v0,unsigned char v1,unsigned char v2,unsigned char v3, int offset){
+	if(IsValidPin(group*4+offset+3) ){
+		m_PWMValues[group*4+offset]=v0;
+		m_PWMValues[group*4+offset+1]=v1;
+		m_PWMValues[group*4+offset+2]=v2;
+		m_PWMValues[group*4+offset+3]=v3;
 	}
 }
 
-void CShiftPWM::SetGroupOf5(int group, unsigned char v0,unsigned char v1,unsigned char v2,unsigned char v3,unsigned char v4){
-	if(IsValidPin(group*5+4) ){
-		m_PWMValues[group*5]=v0;
-		m_PWMValues[group*5+1]=v1;
-		m_PWMValues[group*5+2]=v2;
-		m_PWMValues[group*5+3]=v3;
-		m_PWMValues[group*5+4]=v4;
+void CShiftPWM::SetGroupOf5(int group, unsigned char v0,unsigned char v1,unsigned char v2,unsigned char v3,unsigned char v4, int offset){
+	if(IsValidPin(group*5+offset+4) ){
+		m_PWMValues[group*5+offset]=v0;
+		m_PWMValues[group*5+offset+1]=v1;
+		m_PWMValues[group*5+offset+2]=v2;
+		m_PWMValues[group*5+offset+3]=v3;
+		m_PWMValues[group*5+offset+4]=v4;
 	}
 }
 
-void CShiftPWM::SetRGB(int led, unsigned char r,unsigned char g,unsigned char b){
-	if(IsValidPin(led*3+2) ){
-		m_PWMValues[led*3]=( (unsigned int) r * m_maxBrightness)>>8;
-		m_PWMValues[led*3+1]=( (unsigned int) g * m_maxBrightness)>>8;
-		m_PWMValues[led*3+2]=( (unsigned int) b * m_maxBrightness)>>8;
+void CShiftPWM::SetRGB(int led, unsigned char r,unsigned char g,unsigned char b, int offset){
+	if(IsValidPin(led*3+offset+2) ){
+		m_PWMValues[led*3+offset]=( (unsigned int) r * m_maxBrightness)>>8;
+		m_PWMValues[led*3+offset+1]=( (unsigned int) g * m_maxBrightness)>>8;
+		m_PWMValues[led*3+offset+2]=( (unsigned int) b * m_maxBrightness)>>8;
 	}
 }
 
@@ -128,8 +128,8 @@ void CShiftPWM::SetAllRGB(unsigned char r,unsigned char g,unsigned char b){
 	}
 }
 
-void CShiftPWM::SetHSV(int led, unsigned int hue, unsigned int sat, unsigned int val){
-	if(IsValidPin(led*3+2) ){
+void CShiftPWM::SetHSV(int led, unsigned int hue, unsigned int sat, unsigned int val, int offset){
+	if(IsValidPin(led*3+offset+2) ){
 		unsigned char r,g,b;
 		unsigned int H_accent = hue/60;
 		unsigned int bottom = ((255 - sat) * val)>>8;
@@ -174,9 +174,9 @@ void CShiftPWM::SetHSV(int led, unsigned int hue, unsigned int sat, unsigned int
 			b = falling;
 			break;
 		}  
-		m_PWMValues[led*3]=( (unsigned int) r * m_maxBrightness)>>8;
-		m_PWMValues[led*3+1]=( (unsigned int) g * m_maxBrightness)>>8;
-		m_PWMValues[led*3+2]=( (unsigned int) b * m_maxBrightness)>>8;;
+		m_PWMValues[led*3+offset]=( (unsigned int) r * m_maxBrightness)>>8;
+		m_PWMValues[led*3+offset+1]=( (unsigned int) g * m_maxBrightness)>>8;
+		m_PWMValues[led*3+offset+2]=( (unsigned int) b * m_maxBrightness)>>8;;
 	}
 }
 

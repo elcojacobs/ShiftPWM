@@ -39,14 +39,14 @@ public:
 	void SetOne(int pin, unsigned char value);
 	void SetAll(unsigned char value);
 
-	void SetGroupOf2(int group, unsigned char v0, unsigned char v1);
-	void SetGroupOf3(int group, unsigned char v0, unsigned char v1, unsigned char v2);
-	void SetGroupOf4(int group, unsigned char v0, unsigned char v1, unsigned char v2, unsigned char v3);
-	void SetGroupOf5(int group, unsigned char v0, unsigned char v1, unsigned char v2, unsigned char v3, unsigned char v4);
+	void SetGroupOf2(int group, unsigned char v0, unsigned char v1, int offset = 0);
+	void SetGroupOf3(int group, unsigned char v0, unsigned char v1, unsigned char v2, int offset = 0);
+	void SetGroupOf4(int group, unsigned char v0, unsigned char v1, unsigned char v2, unsigned char v3, int offset = 0);
+	void SetGroupOf5(int group, unsigned char v0, unsigned char v1, unsigned char v2, unsigned char v3, unsigned char v4, int offset = 0);
 
-	void SetRGB(int led, unsigned char r,unsigned char g,unsigned char b);
+	void SetRGB(int led, unsigned char r,unsigned char g,unsigned char b, int offset = 0);
 	void SetAllRGB(unsigned char r,unsigned char g,unsigned char b);
-	void SetHSV(int led, unsigned int hue, unsigned int sat, unsigned int val);
+	void SetHSV(int led, unsigned int hue, unsigned int sat, unsigned int val, int offset = 0);
 	void SetAllHSV(unsigned int hue, unsigned int sat, unsigned int val);
 
 
