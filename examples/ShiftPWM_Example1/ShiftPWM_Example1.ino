@@ -91,8 +91,14 @@ void setup()   {
 
   Serial.begin(9600);
 
+  // Sets the number of 8-bit registers that are used.
   ShiftPWM.SetAmountOfRegisters(numRegisters);
-  ShiftPWM.Start(pwmFrequency,maxBrightness);  
+
+  // SetPinGrouping allows flexibility in LED setup. 
+  // If your LED's are connected like this: RRRRGGGGBBBBRRRRGGGGBBBB, use SetPinGrouping(4).
+  ShiftPWM.SetPinGrouping(1); //This is the default, but I added here to demonstrate how to use the funtion
+  
+  ShiftPWM.Start(pwmFrequency,maxBrightness);
 }
 
 
@@ -222,6 +228,5 @@ void rgbLedRainbow(int numRGBLeds, int delayVal, int numCycles, int rainbowWidth
     } 
   }  
 }
-
 
 

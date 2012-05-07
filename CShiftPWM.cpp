@@ -37,8 +37,9 @@ CShiftPWM::CShiftPWM(int timerInUse) : m_timer(timerInUse){ //Timer is set in in
 	m_ledFrequency = 0;
 	m_maxBrightness = 0;
 	m_amountOfRegisters = 0;    
-	m_amountOfOutputs=0;
-	counter =0;
+	m_amountOfOutputs = 0;
+	m_counter = 0;
+	m_pinGrouping = 1; // Default = RGBRGBRGB... PinGrouping = 3 means: RRRGGGBBBRRRGGGBBB...
 
 	unsigned char * m_PWMValues=0;
 }
@@ -79,116 +80,115 @@ void CShiftPWM::SetAll(unsigned char value){
 }
 
 void CShiftPWM::SetGroupOf2(int group, unsigned char v0,unsigned char v1, int offset){
-	if(IsValidPin(group*2+offset+1) ){
-		m_PWMValues[group*2+offset]=v0;
-		m_PWMValues[group*2+offset+1]=v1;
+	int skip = m_pinGrouping*(group/m_pinGrouping); // is not equal to 2*group. Division is rounded down first.
+	if(IsValidPin(group+skip+offset+m_pinGrouping) ){
+		m_PWMValues[group+skip+offset]					=v0;
+		m_PWMValues[group+skip+offset+m_pinGrouping]	=v1;
 	}
 }
 
 void CShiftPWM::SetGroupOf3(int group, unsigned char v0,unsigned char v1,unsigned char v2, int offset){
-	if(IsValidPin(group*3+offset+2) ){
-		m_PWMValues[group*3+offset]=v0;
-		m_PWMValues[group*3+offset+1]=v1;
-		m_PWMValues[group*3+offset+2]=v2;
+	int skip = 2*m_pinGrouping*(group/m_pinGrouping); // is not equal to 2*group. Division is rounded down first.
+	if(IsValidPin(group+skip+offset+2*m_pinGrouping) ){
+		m_PWMValues[group+skip+offset]					=v0;
+		m_PWMValues[group+skip+offset+m_pinGrouping]	=v1;
+		m_PWMValues[group+skip+offset+m_pinGrouping*2]	=v2;
 	}
 }
 
 void CShiftPWM::SetGroupOf4(int group, unsigned char v0,unsigned char v1,unsigned char v2,unsigned char v3, int offset){
-	if(IsValidPin(group*4+offset+3) ){
-		m_PWMValues[group*4+offset]=v0;
-		m_PWMValues[group*4+offset+1]=v1;
-		m_PWMValues[group*4+offset+2]=v2;
-		m_PWMValues[group*4+offset+3]=v3;
+	int skip = 3*m_pinGrouping*(group/m_pinGrouping); // is not equal to 2*group. Division is rounded down first.
+	if(IsValidPin(group+skip+offset+3*m_pinGrouping) ){
+		m_PWMValues[group+skip+offset]					=v0;
+		m_PWMValues[group+skip+offset+m_pinGrouping]	=v1;
+		m_PWMValues[group+skip+offset+m_pinGrouping*2]	=v2;
+		m_PWMValues[group+skip+offset+m_pinGrouping*3]	=v3;
 	}
 }
 
 void CShiftPWM::SetGroupOf5(int group, unsigned char v0,unsigned char v1,unsigned char v2,unsigned char v3,unsigned char v4, int offset){
-	if(IsValidPin(group*5+offset+4) ){
-		m_PWMValues[group*5+offset]=v0;
-		m_PWMValues[group*5+offset+1]=v1;
-		m_PWMValues[group*5+offset+2]=v2;
-		m_PWMValues[group*5+offset+3]=v3;
-		m_PWMValues[group*5+offset+4]=v4;
+	int skip = 4*m_pinGrouping*(group/m_pinGrouping); // is not equal to 2*group. Division is rounded down first.
+	if(IsValidPin(group+skip+offset+4*m_pinGrouping) ){
+		m_PWMValues[group+skip+offset]					=v0;
+		m_PWMValues[group+skip+offset+m_pinGrouping]	=v1;
+		m_PWMValues[group+skip+offset+m_pinGrouping*2]	=v2;
+		m_PWMValues[group+skip+offset+m_pinGrouping*3]	=v3;
+		m_PWMValues[group+skip+offset+m_pinGrouping*4]	=v4;
 	}
 }
 
 void CShiftPWM::SetRGB(int led, unsigned char r,unsigned char g,unsigned char b, int offset){
-	if(IsValidPin(led*3+offset+2) ){
-		m_PWMValues[led*3+offset]=( (unsigned int) r * m_maxBrightness)>>8;
-		m_PWMValues[led*3+offset+1]=( (unsigned int) g * m_maxBrightness)>>8;
-		m_PWMValues[led*3+offset+2]=( (unsigned int) b * m_maxBrightness)>>8;
+	int skip = 2*m_pinGrouping*(led/m_pinGrouping); // is not equal to 2*led. Division is rounded down first.
+	if(IsValidPin(led+skip+offset+2*m_pinGrouping) ){
+		m_PWMValues[led+skip+offset]					=( (unsigned int) r * m_maxBrightness)>>8;
+		m_PWMValues[led+skip+offset+m_pinGrouping]		=( (unsigned int) g * m_maxBrightness)>>8;
+		m_PWMValues[led+skip+offset+2*m_pinGrouping]	=( (unsigned int) b * m_maxBrightness)>>8;
 	}
 }
 
 void CShiftPWM::SetAllRGB(unsigned char r,unsigned char g,unsigned char b){
-	for(int k=0 ; (k+2) < m_amountOfOutputs; k+=3){
-		m_PWMValues[k]=( (unsigned int) r * m_maxBrightness)>>8;
-		m_PWMValues[k+1]=( (unsigned int) g * m_maxBrightness)>>8;
-		m_PWMValues[k+2]=( (unsigned int) b * m_maxBrightness)>>8;
+	for(int k=0 ; (k+3*m_pinGrouping-1) < m_amountOfOutputs; k+=3*m_pinGrouping){
+		for(int l=0; l<m_pinGrouping;l++){
+			m_PWMValues[k+l]				=	( (unsigned int) r * m_maxBrightness)>>8;
+			m_PWMValues[k+l+m_pinGrouping]	=	( (unsigned int) g * m_maxBrightness)>>8;
+			m_PWMValues[k+l+m_pinGrouping*2]	=	( (unsigned int) b * m_maxBrightness)>>8;
+		}
 	}
 }
 
 void CShiftPWM::SetHSV(int led, unsigned int hue, unsigned int sat, unsigned int val, int offset){
-	if(IsValidPin(led*3+offset+2) ){
-		unsigned char r,g,b;
-		unsigned int H_accent = hue/60;
-		unsigned int bottom = ((255 - sat) * val)>>8;
-		unsigned int top = val;
-		unsigned char rising  = ((top-bottom)  *(hue%60   )  )  /  60  +  bottom;
-		unsigned char falling = ((top-bottom)  *(60-hue%60)  )  /  60  +  bottom;
+	unsigned char r,g,b;
+	unsigned int H_accent = hue/60;
+	unsigned int bottom = ((255 - sat) * val)>>8;
+	unsigned int top = val;
+	unsigned char rising  = ((top-bottom)  *(hue%60   )  )  /  60  +  bottom;
+	unsigned char falling = ((top-bottom)  *(60-hue%60)  )  /  60  +  bottom;
 
-		switch(H_accent) {
-		case 0:
-			r = top;
-			g = rising;
-			b = bottom;
-			break;
+	switch(H_accent) {
+	case 0:
+		r = top;
+		g = rising;
+		b = bottom;
+		break;
 
-		case 1:
-			r = falling;
-			g = top;
-			b = bottom;
-			break;
+	case 1:
+		r = falling;
+		g = top;
+		b = bottom;
+		break;
 
-		case 2:
-			r = bottom;
-			g = top;
-			b = rising;
-			break;
+	case 2:
+		r = bottom;
+		g = top;
+		b = rising;
+		break;
 
-		case 3:
-			r = bottom;
-			g = falling;
-			b = top;
-			break;
+	case 3:
+		r = bottom;
+		g = falling;
+		b = top;
+		break;
 
-		case 4:
-			r = rising;
-			g = bottom;
-			b = top;
-			break;
+	case 4:
+		r = rising;
+		g = bottom;
+		b = top;
+		break;
 
-		case 5:
-			r = top;
-			g = bottom;
-			b = falling;
-			break;
-		}  
-		m_PWMValues[led*3+offset]=( (unsigned int) r * m_maxBrightness)>>8;
-		m_PWMValues[led*3+offset+1]=( (unsigned int) g * m_maxBrightness)>>8;
-		m_PWMValues[led*3+offset+2]=( (unsigned int) b * m_maxBrightness)>>8;;
+	case 5:
+		r = top;
+		g = bottom;
+		b = falling;
+		break;
 	}
+	SetRGB(led,r,g,b,offset);
 }
 
 void CShiftPWM::SetAllHSV(unsigned int hue, unsigned int sat, unsigned int val){
 	// Set the first LED
 	SetHSV(0, hue, sat, val);
-	// Copy RGB values to other LED's.
-	for(int k=3 ; (k+2) < m_amountOfOutputs; k+=3){
-		m_PWMValues[k]=m_PWMValues[0];
-		m_PWMValues[k+1]=m_PWMValues[1];
-		m_PWMValues[k+2]=m_PWMValues[2];
-	}
+	// Copy RGB values all LED's.
+	SetAllRGB(m_PWMValues[m_pinGrouping],m_PWMValues[2*m_pinGrouping],m_PWMValues[3*m_pinGrouping]);
 }
 
 // OneByOne functions are usefull for testing all your outputs
@@ -236,6 +236,11 @@ void CShiftPWM::SetAmountOfRegisters(unsigned char newAmount){
 		Serial.println(F("Amount of registers is not increased, because load would become too high"));
 		sei();
 	}
+}
+
+void CShiftPWM::SetPinGrouping(int grouping){
+	// Sets the number of pins per color that are used after eachother. RRRRGGGGBBBBRRRRGGGGBBBB would be a grouping of 4.
+	m_pinGrouping = grouping;
 }
 
 bool CShiftPWM::LoadNotTooHigh(void){

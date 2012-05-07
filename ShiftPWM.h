@@ -126,7 +126,7 @@ static inline void ShiftPWM_handleInterrupt(void){
 
 	// Write shift register latch clock low 
 	bitClear(*latchPort, latchBit);
-	unsigned char counter = ShiftPWM.counter;
+	unsigned char counter = ShiftPWM.m_counter;
 	SPDR = 0; // write bogus bit to the SPI, because in the loop there is a receive before send.
 	for(unsigned char i =ShiftPWM.m_amountOfRegisters; i>0;--i){   // do a whole shift register at once. This unrolls the loop for extra speed
 		unsigned char sendbyte;  // no need to initialize, all bits are replaced
@@ -152,11 +152,11 @@ static inline void ShiftPWM_handleInterrupt(void){
 	// Write shift register latch clock high 
 	bitSet(*latchPort, latchBit);
 
-	if(ShiftPWM.counter<ShiftPWM.m_maxBrightness){
-		ShiftPWM.counter++; // Increase the counter
+	if(ShiftPWM.m_counter<ShiftPWM.m_maxBrightness){
+		ShiftPWM.m_counter++; // Increase the counter
 	}
 	else{
-		ShiftPWM.counter=0; // Reset counter if it maximum brightness has been reached
+		ShiftPWM.m_counter=0; // Reset counter if it maximum brightness has been reached
 	} 	
 } 
 

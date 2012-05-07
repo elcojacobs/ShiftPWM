@@ -33,6 +33,7 @@ public:
 public:
 	void Start(int ledFrequency, unsigned char max_Brightness);
 	void SetAmountOfRegisters(unsigned char newAmount);
+	void SetPinGrouping(int grouping);
 	void PrintInterruptLoad(void);
 	void OneByOneSlow(void);
 	void OneByOneFast(void);
@@ -48,25 +49,26 @@ public:
 	void SetAllRGB(unsigned char r,unsigned char g,unsigned char b);
 	void SetHSV(int led, unsigned int hue, unsigned int sat, unsigned int val, int offset = 0);
 	void SetAllHSV(unsigned int hue, unsigned int sat, unsigned int val);
-
+	
 
 private:
 	void OneByOne_core(int delaytime);
 	bool IsValidPin(int pin);
 	void InitTimer1(void);
 	void InitTimer2(void);
-	int m_prescaler;
 	bool LoadNotTooHigh(void);
+	
 	const int m_timer;
-
+	int m_prescaler;
 
 public:
 	int m_ledFrequency;  
 	unsigned char m_maxBrightness;
 	unsigned char m_amountOfRegisters;
 	int m_amountOfOutputs;
+	int m_pinGrouping;
 	unsigned char * m_PWMValues;
-	unsigned char counter;
+	unsigned char m_counter;
 };
 
 #endif
