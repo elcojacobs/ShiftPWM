@@ -55,10 +55,11 @@
  * Debug information for wrong input to functions is also send to the serial port,
  * so check the serial port when you run into problems.
  * 
- * ShiftPWM v1.05, (c) Elco Jacobs, May 2012.
+ * ShiftPWM v1.1, (c) Elco Jacobs, May 2012.
  * 
  *****************************************************************************/
-//#include <Servo.h>
+ 
+//#include <Servo.h> <-- If you include Servo.h, which uses timer1, ShiftPWM will automatically switch to timer2
 #include <SPI.h>
 
 // Clock and data pins are pins from the hardware SPI, you cannot choose them yourself.
@@ -69,7 +70,7 @@
 const int ShiftPWM_latchPin=8;
 
 // If your LED's turn on if the pin is low, set this to 1, otherwise set it to 0.
-const bool ShiftPWM_invertOutputs = 0; 
+const bool ShiftPWM_invertOutputs = 1; 
 
 #include <ShiftPWM.h>   // include ShiftPWM.h after setting the pins!
 
@@ -186,7 +187,6 @@ void loop()
     while(abs(peak-prevPeak)<5){
       peak =  random(numRGBleds); // pick a new peak value that differs at least 5 from previous peak
     }
-    Serial.println(peak);
     // animate to new top
     while(currentLevel!=peak){
       if(currentLevel<peak){
@@ -228,5 +228,3 @@ void rgbLedRainbow(int numRGBLeds, int delayVal, int numCycles, int rainbowWidth
     } 
   }  
 }
-
-

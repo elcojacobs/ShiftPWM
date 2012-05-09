@@ -27,7 +27,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 class CShiftPWM{
 public:
-	CShiftPWM(const int timerInUse); 
+	CShiftPWM(const int timerInUse, bool noSPI); 
 	~CShiftPWM();
 
 public:
@@ -59,7 +59,9 @@ private:
 	bool LoadNotTooHigh(void);
 	
 	const int m_timer;
+	const bool m_noSPI;
 	int m_prescaler;
+	
 
 public:
 	int m_ledFrequency;  

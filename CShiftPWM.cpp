@@ -33,7 +33,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 extern const bool ShiftPWM_invertOutputs;
 
-CShiftPWM::CShiftPWM(int timerInUse) : m_timer(timerInUse){ //Timer is set in initializer list, because it is const
+CShiftPWM::CShiftPWM(int timerInUse, bool noSPI) : m_timer(timerInUse), m_noSPI(noSPI){ // Constants are set in initializer list
 	m_ledFrequency = 0;
 	m_maxBrightness = 0;
 	m_amountOfRegisters = 0;    
@@ -246,7 +246,13 @@ void CShiftPWM::SetPinGrouping(int grouping){
 bool CShiftPWM::LoadNotTooHigh(void){
 	// This function calculates if the interrupt load would become higher than 0.9 and prints an error if it would.
 	// This is with inverted outputs, which is worst case. Without inverting, it would be 42 per register.
-	float interruptDuration = 97+43* (float) m_amountOfRegisters;	
+	float interruptDuration;
+	if(m_noSPI){
+		interruptDuration = 96+108*(float) m_amountOfRegisters;
+	}
+	else{
+		interruptDuration = 97+43* (float) m_amountOfRegisters;
+	}
 	float interruptFrequency = (float) m_ledFrequency* (float) m_maxBrightness;
 	float load = interruptDuration*interruptFrequency/F_CPU;
 
