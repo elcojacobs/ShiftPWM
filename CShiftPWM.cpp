@@ -459,4 +459,3 @@ void CShiftPWM::PrintInterruptLoad(void){
 		bitSet(TIMSK2,OCIE2A); 
 	}
 }
-
