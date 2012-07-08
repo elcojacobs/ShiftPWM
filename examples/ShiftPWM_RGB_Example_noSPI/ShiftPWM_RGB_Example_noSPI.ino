@@ -68,16 +68,16 @@ const int ShiftPWM_clockPin=8;
 const int ShiftPWM_latchPin=9;
 
 // If your LED's turn on if the pin is low, set this to 1, otherwise set it to 0.
-const bool ShiftPWM_invertOutputs = 1; 
+const bool ShiftPWM_invertOutputs = 0; 
 
 #include <ShiftPWM.h>   // include ShiftPWM.h after setting the pins!
 
 // Here you set the number of brightness levels, the update frequency and the number of shift registers.
 // These values affect the load of ShiftPWM.
 // Choose them wisely and use the PrintInterruptLoad() function to verify your load.
-unsigned char maxBrightness = 150;
+unsigned char maxBrightness = 255;
 unsigned char pwmFrequency = 75;
-int numRegisters = 6;
+int numRegisters = 3;
 int numRGBleds = numRegisters*8/3;
 
 void setup()   {                

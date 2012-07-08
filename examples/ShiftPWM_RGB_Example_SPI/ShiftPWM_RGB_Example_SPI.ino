@@ -70,7 +70,7 @@
 const int ShiftPWM_latchPin=8;
 
 // If your LED's turn on if the pin is low, set this to 1, otherwise set it to 0.
-const bool ShiftPWM_invertOutputs = 1; 
+const bool ShiftPWM_invertOutputs = 0; 
 
 #include <ShiftPWM.h>   // include ShiftPWM.h after setting the pins!
 
@@ -172,7 +172,7 @@ void loop()
 
   // Update random LED to random color. Funky!
   for(int i=0;i<1000;i++){
-    ShiftPWM.SetHSV(random(numRGBleds),random(255),255,255);
+    ShiftPWM.SetHSV(random(numRGBleds),random(360),255,255);
     delay(15);
   }
 
