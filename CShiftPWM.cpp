@@ -188,6 +188,7 @@ void CShiftPWM::SetAllHSV(unsigned int hue, unsigned int sat, unsigned int val){
 	// Set the first LED
 	SetHSV(0, hue, sat, val);
 	// Copy RGB values all LED's.
+	SetAllRGB(m_PWMValues[0],m_PWMValues[m_pinGrouping],m_PWMValues[2*m_pinGrouping]);
 	SetAllRGB(m_PWMValues[m_pinGrouping],m_PWMValues[2*m_pinGrouping],m_PWMValues[3*m_pinGrouping]);
 }
 
