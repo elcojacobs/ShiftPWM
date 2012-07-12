@@ -253,7 +253,7 @@ bool CShiftPWM::LoadNotTooHigh(void){
 	else{
 		interruptDuration = 97+43* (float) m_amountOfRegisters;
 	}
-	float interruptFrequency = (float) m_ledFrequency* (float) m_maxBrightness;
+	float interruptFrequency = (float) m_ledFrequency* ((float) m_maxBrightness + 1);
 	float load = interruptDuration*interruptFrequency/F_CPU;
 
 	if(load > 0.9){
