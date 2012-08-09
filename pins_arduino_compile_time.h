@@ -22,7 +22,7 @@ a pointer to an output register that stays in the same place (* const), but can 
 These definitions are understood by the compiler and result in superfast code,
 but still allow you to use the arduino pin numbers instead of registers like PORTB
 
-2011 Elco Jacobs, Technical University of Eindhoven, department of Industrial Design, Electronics Atelier.
+(C) 2011-2012 Elco Jacobs. www.elcojacobs.com
 
 */
 
@@ -252,7 +252,9 @@ const uint8_t digital_pin_to_bit_PGM_ct[] = {
 	7         , // PK 7 ** 69 ** A15
 };
 
-#elif defined(__AVR_ATmega32U4__) && defined(CORE_TEENSY)
+#elif defined(__AVR_ATmega32U4__)
+
+#if defined(CORE_TEENSY)
 
 volatile uint8_t * const port_to_output_PGM_ct[] = {
 	NOT_A_PORT, NOT_A_PORT, &PORTB, &PORTC, &PORTD, &PORTE, &PORTF
@@ -267,8 +269,23 @@ const uint8_t digital_pin_to_bit_PGM_ct[] = {
 	6,  7,  4,  5,  6,  7,  6,  5,  4,  1,  0,
 	4,  5,  6
 };
-
-#elif defined(__AVR_AT90USB1286__) && defined(CORE_TEENSY)
+#else
+//Assumes Arduino Leonardo
+volatile uint8_t * const port_to_output_PGM_ct[] = {
+	NOT_A_PORT, NOT_A_PORT, &PORTB, &PORTC, &PORTD, &PORTE, &PORTF
+};
+const uint8_t digital_pin_to_port_PGM_ct[] = {
+	PD, PD, PD, PD, PD, PC, PD, PE, PB, PB, PB,
+	PB, PD, PC, PB, PB, PB, PB, PF, PF, PF, PF,
+	PF, PF, PD, PD, PB, PB, PB, PD
+};
+const uint8_t digital_pin_to_bit_PGM_ct[] = {
+	2, 3, 1, 0, 4, 6, 7, 6, 4, 5, 6,
+	7, 6, 7, 3, 1, 2, 0, 7, 6, 5, 4,
+	1, 0, 4, 7, 4, 5, 6, 6
+};
+#endif
+#elif defined(__AVR_AT90USB1286__)
 
 volatile uint8_t * const port_to_output_PGM_ct[] = {
         NOT_A_PORT, &PORTA, &PORTB, &PORTC, &PORTD, &PORTE, &PORTF
