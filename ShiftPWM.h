@@ -1,7 +1,7 @@
 /*
-ShiftPWM.h - Library for Arduino to PWM many outputs using shift registers - Version 1
-Copyright (c) 2011 Elco Jacobs, Technical University of Eindhoven, department of 
-Industrial Design, Electronics Atelier. All right reserved.
+ShiftPWM.h - Library for Arduino to PWM many outputs using shift registers
+Copyright (c) 2011-2012 Elco Jacobs, www.elcojacobs.com
+All right reserved.
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
@@ -35,6 +35,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // These should be defined in the file where ShiftPWM.h is included.
 extern const int ShiftPWM_latchPin;
 extern const bool ShiftPWM_invertOutputs;
+extern const bool ShiftPWM_balanceLoad;
 
 // The ShiftPWM object is created in the header file, instead of defining it as extern here and creating it in the cpp file.
 // If the ShiftPWM object is created in the cpp file, it is separately compiled with the library.
@@ -43,18 +44,18 @@ extern const bool ShiftPWM_invertOutputs;
 #ifndef SHIFTPWM_NOSPI
 	// Use SPI
 	#ifndef _useTimer1 //This is defined in Servo.h
-	CShiftPWM ShiftPWM(1,false);
+	CShiftPWM ShiftPWM(1,false,ShiftPWM_latchPin,MOSI,SCK);
 	#else
-	CShiftPWM ShiftPWM(2,false);  // if timer1 is in use by servo, use timer 2
+	CShiftPWM ShiftPWM(2,false,ShiftPWM_latchPin,MOSI,SCK);  // if timer1 is in use by servo, use timer 2
 	#endif
 #else
 	// Don't use SPI
 	extern const int ShiftPWM_clockPin;
 	extern const int ShiftPWM_dataPin;
 	#ifndef _useTimer1 //This is defined in Servo.h
-	CShiftPWM ShiftPWM(1,true);
+	CShiftPWM ShiftPWM(1,true,ShiftPWM_latchPin,ShiftPWM_dataPin,ShiftPWM_clockPin);
 	#else
-	CShiftPWM ShiftPWM(2,true);  // if timer1 is in use by servo, use timer 2
+	CShiftPWM ShiftPWM(2,true,ShiftPWM_latchPin,ShiftPWM_dataPin,ShiftPWM_clockPin);  // if timer1 is in use by servo, use timer 2
 	#endif	
 #endif
 
@@ -120,7 +121,9 @@ static inline void ShiftPWM_handleInterrupt(void){
 	SPDR = 0; // write bogus bit to the SPI, because in the loop there is a receive before send.
 	for(unsigned char i = ShiftPWM.m_amountOfRegisters; i>0;--i){   // do a whole shift register at once. This unrolls the loop for extra speed
 		unsigned char sendbyte;  // no need to initialize, all bits are replaced
-
+		if(ShiftPWM_balanceLoad){
+			counter +=8; // distribute the load by using a shifted counter per shift register
+		}
 		add_one_pin_to_byte(sendbyte, counter, --ledPtr);
 		add_one_pin_to_byte(sendbyte, counter,  --ledPtr);
 		add_one_pin_to_byte(sendbyte, counter,  --ledPtr);
@@ -141,6 +144,9 @@ static inline void ShiftPWM_handleInterrupt(void){
 	#else
 	//Use port manipulation to send out all bits
 	for(unsigned char i = ShiftPWM.m_amountOfRegisters; i>0;--i){   // do one shift register at a time. This unrolls the loop for extra speed
+		if(ShiftPWM_balanceLoad){
+			counter +=8; // distribute the load by using a shifted counter per shift register
+		}
 		pwm_output_one_pin(clockPort, dataPort, clockBit, dataBit, counter, --ledPtr);  // This takes 12 or 13 clockcycles
 		pwm_output_one_pin(clockPort, dataPort, clockBit, dataBit, counter, --ledPtr);
 		pwm_output_one_pin(clockPort, dataPort, clockBit, dataBit, counter, --ledPtr);

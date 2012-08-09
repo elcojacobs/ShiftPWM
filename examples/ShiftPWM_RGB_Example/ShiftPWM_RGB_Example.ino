@@ -1,92 +1,48 @@
-/******************************************************************************
- * This example shows how to use the ShiftPWM library to PWM many outputs.
- * All shift registers are chained, so they can be driven with 3 pins from the arduino.
- * A timer interrupt updates all PWM outputs according to their duty cycle setting.
- * The outputs can be inverted by making ShiftPWM_invertOutputs true.
- * 
- * How the library works:
- * The ShiftPWM class keeps a setting for the duty cycle for each output pin, which
- * can be set using the provided functions. It also keeps a counter which it compares 
- * to these duty cycles. This timer continuously runs from 0 to the maximum duty cycle.
- * 
- * A timer interrupt is configured by ShiftPWM.Start(pwmFrequency,maxBrightness).
- * The interrupt frequency is set to pwmFrequency * (maxBrightness+1).
- * Each interrupt all duty cycles are compared to the counter and the corresponding pin
- * is written 1 or 0 based on the result. Then the counter is increased by one.
- * 
- * The duration of the interrupt depends on the number of shift registers (N). The worst case is:
- * T = 80 + 104*N
- * 
- * The load of the interrupt function on your program can be calculated:
- * L = Interrupt frequency * interrupt duration / clock frequency
- * L = F*(Bmax+1)*(80+104*N)/F_CPU
- * Quick reference for load:
- * 3 registers  255 maxBrightness 75Hz  load = 0.47
- * 6 registers  150 maxBrightness 75Hz  load = 0.50
- * 24 registers  50 maxBrightness 75Hz  load = 0.62
- * 48 registers  25 maxBrightness 75Hz  load = 0.62
- * 
- * 
- * A higher interrupt load will mean less computional power for your main program,
- * so try to keep it as low as possible and at least below 0.9.
- * 
- * The following functions are available:
- * 
- * ShiftPWM.Start(int ledFrequency, int max_Brightness)		Enable ShiftPWM with desired frequency and brightness levels
- * ShiftPWM.SetAmountOfRegisters(int newAmount)			Set or change the amount of output registers. Can be changed at runtime.
- * ShiftPWM.PrintInterruptLoad()				Print information on timer usage, frequencies and interrupt load
- * ShiftPWM.OneByOneSlow()  				        Fade in and fade out all outputs slowly
- * ShiftPWM.OneByOneFast()					Fade in and fade out all outputs fast
- * ShiftPWM.SetOne(int pin, unsigned char value)		Set the duty cycle of one output
- * ShiftPWM.SetAll(unsigned char value)				Set all outputs to the same duty cycle
- * 
- * ShiftPWM.SetGroupOf2(int group, unsigned char v0, unsigned char v1);
- * ShiftPWM.SetGroupOf3(int group, unsigned char v0, unsigned char v1, unsigned char v2);
- * ShiftPWM.SetGroupOf4(int group, unsigned char v0, unsigned char v1, unsigned char v2, unsigned char v3);
- * ShiftPWM.SetGroupOf5(int group, unsigned char v0, unsigned char v1, unsigned char v2, unsigned char v3, unsigned char v4);
- * 		--> Set a group of outputs to the given values. SetGroupOf3 is useful for RGB LED's. Each LED will be a group.
- * 
- * ShiftPWM.SetRGB(int led, unsigned char r,unsigned char g,unsigned char b);      // Set one LED to an RGB value
- * ShiftPWM.SetAllRGB(unsigned char r,unsigned char g,unsigned char b);            // Set all LED's to an RGB value
- * ShiftPWM.SetHSV(int led, unsigned int hue, unsigned int sat, unsigned int val); // Set one LED to an HSV value
- * ShiftPWM.SetAllHSV(unsigned int hue, unsigned int sat, unsigned int val);       // Set one LED to an HSV value
- * Note: the RGB and HSV functions assume that the outputs are RGBRGBRGB... without gaps. More flexibility in setup will be added soon.
+/************************************************************************************************************************************
+ * ShiftPWM blocking RGB fades example, (c) Elco Jacobs, updated August 2012.
  *
- * Debug information for wrong input to functions is also send to the serial port,
- * so check the serial port when you run into problems.
- * 
- * ShiftPWM v1.1, (c) Elco Jacobs, May 2012.
- * 
- *****************************************************************************/
-
+ * ShiftPWM blocking RGB fades example. This example uses simple delay loops to create fades.
+ * If you want to change the fading mode based on inputs (sensors, buttons, serial), use the non-blocking example as a starting point.
+ * Please go to www.elcojacobs.com/shiftpwm for documentation, fuction reference and schematics.
+ * If you want to use ShiftPWM with LED strips or high power LED's, visit the shop for boards.
+ ************************************************************************************************************************************/
+ 
 //#include <Servo.h> <-- If you include Servo.h, which uses timer1, ShiftPWM will automatically switch to timer2
-#define SHIFTPWM_NOSPI
 
-// You can choose all pins yourself, but this version is slower than the SPI version
-const int ShiftPWM_dataPin =7;
-const int ShiftPWM_clockPin=8;
-const int ShiftPWM_latchPin=9;
+// Clock and data pins are pins from the hardware SPI, you cannot choose them yourself if you use the hardware SPI.
+// Data pin is MOSI (Uno and earlier: 11, Leonardo: ICSP 4, Mega: 51, Teensy 2.0: 2, Teensy 2.0++: 22) 
+// Clock pin is SCK (Uno and earlier: 13, Leonardo: ICSP 3, Mega: 52, Teensy 2.0: 1, Teensy 2.0++: 21)
 
-// If your LED's turn on if the pin is low, set this to 1, otherwise set it to 0.
-const bool ShiftPWM_invertOutputs = 0; 
+// You can choose the latch pin yourself.
+const int ShiftPWM_latchPin=8;
+
+// ** uncomment this part to NOT use the SPI port and change the pin numbers. This is 2.5x slower **
+// #define SHIFTPWM_NOSPI
+// const int ShiftPWM_dataPin = 11;
+// const int ShiftPWM_clockPin = 13;
+
+
+// If your LED's turn on if the pin is low, set this to true, otherwise set it to false.
+const bool ShiftPWM_invertOutputs = false; 
+
+// You can enable the option below to shift the PWM phase of each shift register by 8 compared to the previous.
+// This will slightly increase the interrupt load, but will prevent all PWM signals from becoming high at the same time.
+// This will be a bit easier on your power supply, because the current peaks are distributed.
+const ShiftPWM_balanceLoad = false;
 
 #include <ShiftPWM.h>   // include ShiftPWM.h after setting the pins!
 
 // Here you set the number of brightness levels, the update frequency and the number of shift registers.
 // These values affect the load of ShiftPWM.
 // Choose them wisely and use the PrintInterruptLoad() function to verify your load.
+// There is a calculator on my website to estimate the load.
+
 unsigned char maxBrightness = 255;
 unsigned char pwmFrequency = 75;
-int numRegisters = 3;
+int numRegisters = 6;
 int numRGBleds = numRegisters*8/3;
 
-void setup()   {                
-  pinMode(ShiftPWM_latchPin, OUTPUT);
-  pinMode(ShiftPWM_clockPin, OUTPUT);
-  pinMode(ShiftPWM_dataPin,  OUTPUT);
-
-// The example is the same as the SPI version below this line 
-
+void setup(){
   Serial.begin(9600);
 
   // Sets the number of 8-bit registers that are used.
@@ -169,7 +125,7 @@ void loop()
 
   // Update random LED to random color. Funky!
   for(int i=0;i<1000;i++){
-    ShiftPWM.SetHSV(random(numRGBleds),random(255),255,255);
+    ShiftPWM.SetHSV(random(numRGBleds),random(360),255,255);
     delay(15);
   }
 
@@ -201,7 +157,7 @@ void loop()
           ShiftPWM.SetRGB(led,0,0,0);
         }
       }
-      delay(3*(numRGBleds-currentLevel)); // go slower near the top
+      delay((64/numRGBleds)*(numRGBleds-currentLevel)); // go slower near the top
     }
   }
 

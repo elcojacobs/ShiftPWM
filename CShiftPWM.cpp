@@ -1,7 +1,6 @@
 /*
-ShiftPWM.h - Library for Arduino to PWM many outputs using shift registers - Version 1
-Copyright (c) 2011 Elco Jacobs, Technical University of Eindhoven, department of 
-Industrial Design, Electronics Atelier.
+CShiftPWM.cpp - ShiftPWM.h - Library for Arduino to PWM many outputs using shift registers
+Copyright (c) 2011-2012 Elco Jacobs, www.elcojacobs.com
 All right reserved.
 
 This library is free software; you can redistribute it and/or
@@ -17,9 +16,6 @@ Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public
 License along with this library; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-
-
----> See ShiftPWM.h for more info
 */
 
 #include "CShiftPWM.h"
@@ -29,11 +25,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include <WProgram.h>
 #endif
 
-#include "CShiftPWM.h"
-
-extern const bool ShiftPWM_invertOutputs;
-
-CShiftPWM::CShiftPWM(int timerInUse, bool noSPI) : m_timer(timerInUse), m_noSPI(noSPI){ // Constants are set in initializer list
+CShiftPWM::CShiftPWM(int timerInUse, bool noSPI, int latchPin, int dataPin, int clockPin) :  // Constants are set in initializer list
+					m_timer(timerInUse), m_noSPI(noSPI), m_latchPin(latchPin), m_dataPin(dataPin), m_clockPin(clockPin){
 	m_ledFrequency = 0;
 	m_maxBrightness = 0;
 	m_amountOfRegisters = 0;    
@@ -272,10 +265,45 @@ bool CShiftPWM::LoadNotTooHigh(void){
 
 void CShiftPWM::Start(int ledFrequency, unsigned char maxBrightness){
 	// Configure and enable timer1 or timer 2 for a compare and match A interrupt.    
-
 	m_ledFrequency = ledFrequency;
 	m_maxBrightness = maxBrightness;
+	
+	pinMode(m_dataPin, OUTPUT);
+	pinMode(m_clockPin, OUTPUT);
+	pinMode(m_latchPin, OUTPUT);
+	
+	digitalWrite(m_clockPin, LOW);
+	digitalWrite(m_dataPin, LOW);
+  	
+	if(!m_noSPI){ // initialize SPI when used
+		// The least significant bit shoult be sent out by the SPI port first.
+		// equals SPI.setBitOrder(LSBFIRST);
+		SPCR |= _BV(DORD);
+		
+		// Here you can set the clock speed of the SPI port. Default is DIV4, which is 4MHz with a 16Mhz system clock.
+		// If you encounter problems due to long wires or capacitive loads, try lowering the SPI clock.
+		// equals SPI.setClockDivider(SPI_CLOCK_DIV4); 
+		
+		SPCR = (SPCR & 0b11111000);
+		SPSR = (SPSR & 0b11111110);
+		
+		// Set clock polarity and phase for shift registers (Mode 3)
+		SPCR |= _BV(CPOL);
+		SPCR |= _BV(CPHA);
+		
+		// When the SS pin is set as OUTPUT, it can be used as
+		// a general purpose output port (it doesn't influence
+		// SPI operations).
+		pinMode(SS, OUTPUT);
+		digitalWrite(SS, HIGH);
 
+		// Warning: if the SS pin ever becomes a LOW INPUT then SPI 
+		// automatically switches to Slave, so the data direction of 
+		// the SS pin MUST be kept as OUTPUT.
+		SPCR |= _BV(MSTR);
+		SPCR |= _BV(SPE);
+	}
+	
 	if(LoadNotTooHigh() ){
 		if(m_timer==1){ 
 			InitTimer1();

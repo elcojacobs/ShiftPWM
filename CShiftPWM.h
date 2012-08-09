@@ -1,7 +1,6 @@
 /*
-ShiftPWM.h - Library for Arduino to PWM many outputs using shift registers - Version 1
-Copyright (c) 2011 Elco Jacobs, Technical University of Eindhoven, department of 
-Industrial Design, Electronics Atelier.
+CShiftPWM.h - Library for Arduino to PWM many outputs using shift registers
+Copyright (c) 2011-2012 Elco Jacobs, www.elcojacobs.com
 All right reserved.
 
 This library is free software; you can redistribute it and/or
@@ -17,9 +16,6 @@ Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public
 License along with this library; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-
-
----> See ShiftPWM.h for more info
 */
 
 #ifndef CShiftPWM_h
@@ -27,7 +23,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 class CShiftPWM{
 public:
-	CShiftPWM(const int timerInUse, bool noSPI); 
+	CShiftPWM(int timerInUse, bool noSPI, int latchPin, int dataPin, int clockPin);
 	~CShiftPWM();
 
 public:
@@ -60,6 +56,10 @@ private:
 	
 	const int m_timer;
 	const bool m_noSPI;
+	const int m_latchPin;
+	const int m_dataPin;
+	const int m_clockPin;	
+	
 	int m_prescaler;
 	
 
@@ -71,6 +71,7 @@ public:
 	int m_pinGrouping;
 	unsigned char * m_PWMValues;
 	unsigned char m_counter;
+
 };
 
 #endif

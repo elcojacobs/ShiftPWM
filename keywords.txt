@@ -32,4 +32,5 @@ ShiftPWM_dataPin	LITERAL1
 ShiftPWM_clockPin	LITERAL1
 ShiftPWM_latchPin	LITERAL1
 ShiftPWM_invertOutputs	LITERAL1
+ShiftPWM_balanceLoad	LITERAL1
 SHIFTPWM_NOSPI	LITERAL1
