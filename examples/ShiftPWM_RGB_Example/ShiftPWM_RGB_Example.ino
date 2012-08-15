@@ -28,7 +28,7 @@ const bool ShiftPWM_invertOutputs = false;
 // You can enable the option below to shift the PWM phase of each shift register by 8 compared to the previous.
 // This will slightly increase the interrupt load, but will prevent all PWM signals from becoming high at the same time.
 // This will be a bit easier on your power supply, because the current peaks are distributed.
-const ShiftPWM_balanceLoad = false;
+const bool ShiftPWM_balanceLoad = false;
 
 #include <ShiftPWM.h>   // include ShiftPWM.h after setting the pins!
 
