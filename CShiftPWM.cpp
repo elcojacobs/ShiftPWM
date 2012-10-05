@@ -18,6 +18,9 @@ License along with this library; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+/* workaround for a bug in WString.h */
+#define F(string_literal) (reinterpret_cast<const __FlashStringHelper *>(PSTR(string_literal)))
+
 #include "CShiftPWM.h"
 #if defined(ARDUINO) && ARDUINO >= 100
 #include <Arduino.h>
@@ -343,8 +346,7 @@ void CShiftPWM::InitTimer1(void){
 	* So the value we want for OCR1A is: timer clock frequency/(LED frequency * number of bightness levels)-1 */
 	m_prescaler = 1;
 	OCR1A = round((float) F_CPU/((float) m_ledFrequency*((float) m_maxBrightness+1)))-1;
-	/* Finally enable the timer interrupt 
-	/* See datasheet  15.11.8) */
+	/* Finally enable the timer interrupt, see datasheet  15.11.8) */
 	bitSet(TIMSK1,OCIE1A);
 }
 
@@ -392,8 +394,7 @@ void CShiftPWM::InitTimer2(void){
 		* We want the frequency of the timer to be (LED frequency)*(number of brightness levels)
 		* So the value we want for OCR2A is: timer clock frequency/(LED frequency * number of bightness levels)-1 */
 		OCR2A = round(   (  (float) F_CPU / (float) m_prescaler ) /  ( (float) m_ledFrequency*( (float) m_maxBrightness+1) ) -1);
-		/* Finally enable the timer interrupt 
-		/* See datasheet  15.11.8) */
+		/* Finally enable the timer interrupt, see datasheet  15.11.8) */
 		bitSet(TIMSK2,OCIE2A);
 }
 

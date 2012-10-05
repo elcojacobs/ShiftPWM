@@ -64,10 +64,10 @@ extern const bool ShiftPWM_balanceLoad;
 // Compare with the counter (cp, 1 clockcycle) --> result is stored in carry
 // Use the rotate over carry right to shift the compare result into the byte. (1 clockcycle).
 #define add_one_pin_to_byte(sendbyte, counter, ledPtr) \
-{ \ 
-	unsigned char pwmval=*ledPtr; \ 
+{ \
+	unsigned char pwmval=*ledPtr; \
 	asm volatile ("cp %0, %1" : /* No outputs */ : "r" (counter), "r" (pwmval): ); \
-	asm volatile ("ror %0" : "+r" (sendbyte) : "r" (sendbyte) : ); 			\
+	asm volatile ("ror %0" : "+r" (sendbyte) : "r" (sendbyte) : ); 	\
 }
 
 // The inline function below uses normal output pins to send one bit to the SPI port.
