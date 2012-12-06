@@ -7,7 +7,9 @@
  * If you want to use ShiftPWM with LED strips or high power LED's, visit the shop for boards.
  ************************************************************************************************************************************/
  
-//#include <Servo.h> <-- If you include Servo.h, which uses timer1, ShiftPWM will automatically switch to timer2
+// ShiftPWM uses timer1 by default. To use a different timer, before '#include <ShiftPWM.h>', add
+// #define SHIFTPWM_USE_TIMER2  // for Arduino Uno and earlier (Atmega328)
+// #define SHIFTPWM_USE_TIMER3  // for Arduino Micro/Leonardo (Atmega32u4)
 
 // Clock and data pins are pins from the hardware SPI, you cannot choose them yourself if you use the hardware SPI.
 // Data pin is MOSI (Uno and earlier: 11, Leonardo: ICSP 4, Mega: 51, Teensy 2.0: 2, Teensy 2.0++: 22) 

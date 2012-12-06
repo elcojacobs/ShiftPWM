@@ -4,12 +4,14 @@
  * This example for ShiftPWM shows how to control your LED's in a non-blocking way: no delay loops.
  * This example receives a number from the serial port to set the fading mode. Instead you can also read buttons or sensors.
  * It uses the millis() function to create fades. The block fades example might be easier to understand, so start there.
- * 
+ *
  * Please go to www.elcojacobs.com/shiftpwm for documentation, fuction reference and schematics.
  * If you want to use ShiftPWM with LED strips or high power LED's, visit the shop for boards.
  */
- 
-//#include <Servo.h> <-- If you include Servo.h, which uses timer1, ShiftPWM will automatically switch to timer2
+
+// ShiftPWM uses timer1 by default. To use a different timer, before '#include <ShiftPWM.h>', add
+// #define SHIFTPWM_USE_TIMER2  // for Arduino Uno and earlier (Atmega328)
+// #define SHIFTPWM_USE_TIMER3  // for Arduino Micro/Leonardo (Atmega32u4)
 
 // Clock and data pins are pins from the hardware SPI, you cannot choose them yourself.
 // Data pin is MOSI (Uno and earlier: 11, Leonardo: ICSP 4, Mega: 51, Teensy 2.0: 2, Teensy 2.0++: 22) 
@@ -57,7 +59,10 @@ unsigned int fadingMode = 0; //start with all LED's off.
 
 unsigned long startTime = 0; // start time for the chosen fading mode
 
-void setup()   {                
+void setup(){
+  while(!Serial){
+    delay(100); 
+  }
   Serial.begin(9600);
 
   // Sets the number of 8-bit registers that are used.
@@ -77,7 +82,10 @@ void loop()
     if(Serial.peek() == 'l'){
       // Print information about the interrupt frequency, duration and load on your program
       ShiftPWM.PrintInterruptLoad();
-      Serial.flush();
+    }
+    else if(Serial.peek() == 'm'){
+      // Print instructions again
+      printInstructions();
     }
     else{
       fadingMode = Serial.parseInt(); // read a number from the serial port to set the mode
@@ -115,12 +123,15 @@ void loop()
         break;         
       case 9:
         Serial.println("Display a color shifting rainbow wider than the LED's");
-        break;                 
+        break;     
       default:
         Serial.println("Unknown mode!");
         break;
       }
-    } 
+    }
+    while (Serial.read() >= 0){
+      ; // flush remaining characters
+    }
   }
   switch(fadingMode){
   case 0:

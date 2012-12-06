@@ -21,6 +21,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #ifndef CShiftPWM_h
 #define CShiftPWM_h
 
+#include <Arduino.h>
+
 class CShiftPWM{
 public:
 	CShiftPWM(int timerInUse, bool noSPI, int latchPin, int dataPin, int clockPin);
@@ -45,26 +47,35 @@ public:
 	void SetAllRGB(unsigned char r,unsigned char g,unsigned char b);
 	void SetHSV(int led, unsigned int hue, unsigned int sat, unsigned int val, int offset = 0);
 	void SetAllHSV(unsigned int hue, unsigned int sat, unsigned int val);
-	
 
 private:
 	void OneByOne_core(int delaytime);
 	bool IsValidPin(int pin);
 	void InitTimer1(void);
-	void InitTimer2(void);
-	bool LoadNotTooHigh(void);
 	
+	#if defined(OCR3A)
+		// Arduino Leonardo or Micro (32u4)
+		void InitTimer3(void);
+	#endif
+
+	#if defined(OCR2A)
+		// Normal Arduino (328)
+		void InitTimer2(void);
+	#endif
+
+	bool LoadNotTooHigh(void);
+
 	const int m_timer;
 	const bool m_noSPI;
 	const int m_latchPin;
 	const int m_dataPin;
-	const int m_clockPin;	
-	
+	const int m_clockPin;
+
 	int m_prescaler;
-	
+
 
 public:
-	int m_ledFrequency;  
+	int m_ledFrequency;
 	unsigned char m_maxBrightness;
 	unsigned char m_amountOfRegisters;
 	int m_amountOfOutputs;

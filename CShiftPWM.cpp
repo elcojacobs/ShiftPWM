@@ -22,17 +22,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define F(string_literal) (reinterpret_cast<const __FlashStringHelper *>(PSTR(string_literal)))
 
 #include "CShiftPWM.h"
-#if defined(ARDUINO) && ARDUINO >= 100
 #include <Arduino.h>
-#else
-#include <WProgram.h>
-#endif
 
 CShiftPWM::CShiftPWM(int timerInUse, bool noSPI, int latchPin, int dataPin, int clockPin) :  // Constants are set in initializer list
 					m_timer(timerInUse), m_noSPI(noSPI), m_latchPin(latchPin), m_dataPin(dataPin), m_clockPin(clockPin){
 	m_ledFrequency = 0;
 	m_maxBrightness = 0;
-	m_amountOfRegisters = 0;    
+	m_amountOfRegisters = 0;
 	m_amountOfOutputs = 0;
 	m_counter = 0;
 	m_pinGrouping = 1; // Default = RGBRGBRGB... PinGrouping = 3 means: RRRGGGBBBRRRGGGBBB...
@@ -52,11 +48,11 @@ bool CShiftPWM::IsValidPin(int pin){
 	}
 	else{
 		Serial.print(F("Error: Trying to write duty cycle of pin "));
-		Serial.print(pin); 		
+		Serial.print(pin);
 		Serial.print(F(" , while number of outputs is "));
-		Serial.print(m_amountOfOutputs); 
+		Serial.print(m_amountOfOutputs);
 		Serial.print(F(" , numbered 0-"));
-		Serial.println(m_amountOfOutputs-1); 
+		Serial.println(m_amountOfOutputs-1);
 		delay(1000);
 		return 0;
 	}
@@ -72,7 +68,7 @@ void CShiftPWM::SetOne(int pin, unsigned char value){
 void CShiftPWM::SetAll(unsigned char value){
 	for(int k=0 ; k<(m_amountOfOutputs);k++){
 		m_PWMValues[k]=value;
-	}   
+	}
 }
 
 void CShiftPWM::SetGroupOf2(int group, unsigned char v0,unsigned char v1, int offset){
@@ -202,12 +198,12 @@ void CShiftPWM::OneByOne_core(int delaytime){
 	for(int pin=0;pin<m_amountOfOutputs;pin++){
 		for(brightness=0;brightness<m_maxBrightness;brightness++){
 			m_PWMValues[pin]=brightness;
-			delay(delaytime);          
-		} 
+			delay(delaytime);
+		}
 		for(brightness=m_maxBrightness;brightness>=0;brightness--){
 			m_PWMValues[pin]=brightness;
 			delay(delaytime);
-		} 
+		}
 	}
 }
 
@@ -267,53 +263,59 @@ bool CShiftPWM::LoadNotTooHigh(void){
 }
 
 void CShiftPWM::Start(int ledFrequency, unsigned char maxBrightness){
-	// Configure and enable timer1 or timer 2 for a compare and match A interrupt.    
+	// Configure and enable timer1 or timer 2 for a compare and match A interrupt.
 	m_ledFrequency = ledFrequency;
 	m_maxBrightness = maxBrightness;
-	
+
 	pinMode(m_dataPin, OUTPUT);
 	pinMode(m_clockPin, OUTPUT);
 	pinMode(m_latchPin, OUTPUT);
-	
+
 	digitalWrite(m_clockPin, LOW);
 	digitalWrite(m_dataPin, LOW);
-  	
+
 	if(!m_noSPI){ // initialize SPI when used
 		// The least significant bit shoult be sent out by the SPI port first.
 		// equals SPI.setBitOrder(LSBFIRST);
 		SPCR |= _BV(DORD);
-		
+
 		// Here you can set the clock speed of the SPI port. Default is DIV4, which is 4MHz with a 16Mhz system clock.
 		// If you encounter problems due to long wires or capacitive loads, try lowering the SPI clock.
-		// equals SPI.setClockDivider(SPI_CLOCK_DIV4); 
-		
+		// equals SPI.setClockDivider(SPI_CLOCK_DIV4);
+
 		SPCR = (SPCR & 0b11111000);
 		SPSR = (SPSR & 0b11111110);
-		
+
 		// Set clock polarity and phase for shift registers (Mode 3)
 		SPCR |= _BV(CPOL);
 		SPCR |= _BV(CPHA);
-		
+
 		// When the SS pin is set as OUTPUT, it can be used as
 		// a general purpose output port (it doesn't influence
 		// SPI operations).
 		pinMode(SS, OUTPUT);
 		digitalWrite(SS, HIGH);
 
-		// Warning: if the SS pin ever becomes a LOW INPUT then SPI 
-		// automatically switches to Slave, so the data direction of 
+		// Warning: if the SS pin ever becomes a LOW INPUT then SPI
+		// automatically switches to Slave, so the data direction of
 		// the SS pin MUST be kept as OUTPUT.
 		SPCR |= _BV(MSTR);
 		SPCR |= _BV(SPE);
 	}
-	
+
 	if(LoadNotTooHigh() ){
-		if(m_timer==1){ 
+		if(m_timer==1){
 			InitTimer1();
 		}
-		else if(m_timer==2){
-			InitTimer2();
+		#if defined(USBCON)
+		else if(m_timer==3){
+			InitTimer3();
 		}
+		#else
+			else if(m_timer==2){
+				InitTimer2();
+			}
+		#endif
 	}
 	else{
 		Serial.println(F("Interrupts are disabled because load is too high."));
@@ -322,7 +324,7 @@ void CShiftPWM::Start(int ledFrequency, unsigned char maxBrightness){
 }
 
 void CShiftPWM::InitTimer1(void){
-	/* Configure timer1 in CTC mode: clear the timer on compare match 
+	/* Configure timer1 in CTC mode: clear the timer on compare match
 	* See the Atmega328 Datasheet 15.9.2 for an explanation on CTC mode.
 	* See table 15-4 in the datasheet. */
 
@@ -350,8 +352,9 @@ void CShiftPWM::InitTimer1(void){
 	bitSet(TIMSK1,OCIE1A);
 }
 
+#if defined(OCR2A)
 void CShiftPWM::InitTimer2(void){
-	/* Configure timer2 in CTC mode: clear the timer on compare match 
+	/* Configure timer2 in CTC mode: clear the timer on compare match
 	* See the Atmega328 Datasheet 15.9.2 for an explanation on CTC mode.
 	* See table 17-8 in the datasheet. */
 
@@ -371,7 +374,7 @@ void CShiftPWM::InitTimer2(void){
 		m_prescaler = 8;
 		bitClear(TCCR2B,CS22); bitSet(TCCR2B,CS21); bitClear(TCCR2B,CS20);
 	}
-	else 
+	else
 		if(compare_value/32 <=255){
 			m_prescaler = 32;
 			bitClear(TCCR2B,CS22); bitSet(TCCR2B,CS21); bitSet(TCCR2B,CS20);
@@ -397,6 +400,42 @@ void CShiftPWM::InitTimer2(void){
 		/* Finally enable the timer interrupt, see datasheet  15.11.8) */
 		bitSet(TIMSK2,OCIE2A);
 }
+#endif
+
+#if defined(OCR3A)
+// Arduino Leonardo or Micro
+void CShiftPWM::InitTimer3(void){
+	/*
+	* Only available on Leonardo and micro.
+	* Configure timer3 in CTC mode: clear the timer on compare match
+	* See the Atmega32u4 Datasheet 15.10.2 for an explanation on CTC mode.
+	* See table 14-5 in the datasheet. */
+
+	bitSet(TCCR3B,WGM32);
+	bitClear(TCCR3B,WGM33);
+	bitClear(TCCR3A,WGM31);
+	bitClear(TCCR3A,WGM30);
+
+
+	/*  Select clock source: internal I/O clock, without a prescaler
+	*  This is the fastest possible clock source for the highest accuracy.
+	*  See table 15-5 in the datasheet. */
+
+	bitSet(TCCR3B,CS30);
+	bitClear(TCCR3B,CS31);
+	bitClear(TCCR3B,CS32);
+
+	/* The timer will generate an interrupt when the value we load in OCR1A matches the timer value.
+	* One period of the timer, from 0 to OCR1A will therefore be (OCR1A+1)/(timer clock frequency).
+	* We want the frequency of the timer to be (LED frequency)*(number of brightness levels)
+	* So the value we want for OCR1A is: timer clock frequency/(LED frequency * number of bightness levels)-1 */
+	m_prescaler = 1;
+	OCR3A = round((float) F_CPU/((float) m_ledFrequency*((float) m_maxBrightness+1)))-1;
+	/* Finally enable the timer interrupt, see datasheet  15.11.8) */
+	bitSet(TIMSK3,OCIE3A);
+}
+#endif
+
 
 
 void CShiftPWM::PrintInterruptLoad(void){
@@ -418,73 +457,119 @@ void CShiftPWM::PrintInterruptLoad(void){
 			return;
 		}
 	}
-	else if(m_timer==2){
-		if(TIMSK2 & (1<<OCIE2A)){
-			// interrupt is enabled, continue
+	#if defined(USBCON)
+		else if(m_timer==3){
+			if(TIMSK3 & (1<<OCIE3A)){
+				// interrupt is enabled, continue
+			}
+			else{
+				// interrupt is disabled
+				Serial.println(F("Interrupt is disabled."));
+				return;
+			}
 		}
-		else{
-			// interrupt is disabled
-			Serial.println(F("Interrupt is disabled."));
-			return;
+	#else
+		else if(m_timer==2){
+			if(TIMSK2 & (1<<OCIE2A)){
+				// interrupt is enabled, continue
+			}
+			else{
+				// interrupt is disabled
+				Serial.println(F("Interrupt is disabled."));
+				return;
+			}
 		}
-	}
+	#endif
 
 	//run with interrupt enabled
 	start1 = micros();
 	for(k=0; k<100000; k++){
-		delayMicroseconds(1); 
+		delayMicroseconds(1);
 	}
-	end1 = micros();  
-	time1 = end1-start1; 
+	end1 = micros();
+	time1 = end1-start1;
 
 	//Disable Interrupt
-	if(m_timer==1){ 
+	if(m_timer==1){
 		bitClear(TIMSK1,OCIE1A);
 	}
-	else if(m_timer==2){
-		bitClear(TIMSK2,OCIE2A);
-	}
+	#if defined(USBCON)
+		else if(m_timer==3){
+			bitClear(TIMSK3,OCIE3A);
+		}
+	#else
+		else if(m_timer==2){
+			bitClear(TIMSK2,OCIE2A);
+		}
+	#endif
 
 
 	// run with interrupt disabled
 	start2 = micros();
 	for(k=0; k<100000; k++){
-		delayMicroseconds(1); 
+		delayMicroseconds(1);
 	}
 	end2 = micros();
 	time2 = end2-start2;
 
 	// ready for calculations
 	load = (double)(time1-time2)/(double)(time1);
-	if(m_timer==1){   
+	if(m_timer==1){
 		interrupt_frequency = (F_CPU/m_prescaler)/(OCR1A+1);
 	}
-	else if(m_timer==2){
-		interrupt_frequency = (F_CPU/m_prescaler)/(OCR2A+1);  
-	}
+	#if defined(USBCON)
+		else if(m_timer==3){
+			interrupt_frequency = (F_CPU/m_prescaler)/(OCR3A+1);
+		}
+	#else
+		else if(m_timer==2){
+			interrupt_frequency = (F_CPU/m_prescaler)/(OCR2A+1);
+		}
+	#endif
 	cycles_per_int = load*(F_CPU/interrupt_frequency);
 
 	//Ready to print information
-	Serial.print(F("Load of interrupt: "));   Serial.println(load,10); 
-	Serial.print(F("Clock cycles per interrupt: "));   Serial.println(cycles_per_int); 
+	Serial.print(F("Load of interrupt: "));   Serial.println(load,10);
+	Serial.print(F("Clock cycles per interrupt: "));   Serial.println(cycles_per_int);
 	Serial.print(F("Interrupt frequency: ")); Serial.print(interrupt_frequency);   Serial.println(F(" Hz"));
 	Serial.print(F("PWM frequency: ")); Serial.print(interrupt_frequency/(m_maxBrightness+1)); Serial.println(F(" Hz"));
 
-	if(m_timer==1){   
-		Serial.println(F("Timer1 in use for highest precision.")); 
-		Serial.println(F("Include servo.h to use timer2."));
-		Serial.print(F("OCR1A: ")); Serial.println(OCR1A, DEC);
-		Serial.print(F("Prescaler: ")); Serial.println(m_prescaler);
 
-		//Re-enable Interrupt	
-		bitSet(TIMSK1,OCIE1A); 
-	}
-	else if(m_timer==2){
-		Serial.println(F("Timer2 in use, because Timer1 is used by servo library."));
-		Serial.print(F("OCR2A: ")); Serial.println(OCR2A, DEC);
-		Serial.print(F("Presclaler: ")); Serial.println(m_prescaler);  
+	#if defined(USBCON)
+		if(m_timer==1){
+			Serial.println(F("Timer1 in use."));
+			Serial.println(F("add '#define SHIFTPWM_USE_TIMER3' before '#include <ShiftPWM.h>' to switch to timer 3."));
+			Serial.print(F("OCR1A: ")); Serial.println(OCR1A, DEC);
+			Serial.print(F("Prescaler: ")); Serial.println(m_prescaler);
 
-		//Re-enable Interrupt	
-		bitSet(TIMSK2,OCIE2A); 
-	}
+			//Re-enable Interrupt
+			bitSet(TIMSK1,OCIE1A);
+		}
+			else if(m_timer==3){
+			Serial.println(F("Timer3 in use."));
+			Serial.print(F("OCR3A: ")); Serial.println(OCR3A, DEC);
+			Serial.print(F("Presclaler: ")); Serial.println(m_prescaler);
+
+			//Re-enable Interrupt
+			bitSet(TIMSK3,OCIE3A);
+		}
+	#else
+		if(m_timer==1){
+			Serial.println(F("Timer1 in use for highest precision."));
+			Serial.println(F("add '#define SHIFTPWM_USE_TIMER2' before '#include <ShiftPWM.h>' to switch to timer 2."));
+			Serial.print(F("OCR1A: ")); Serial.println(OCR1A, DEC);
+			Serial.print(F("Prescaler: ")); Serial.println(m_prescaler);
+
+			//Re-enable Interrupt
+			bitSet(TIMSK1,OCIE1A);
+		}
+		else if(m_timer==2){
+			Serial.println(F("Timer2 in use."));
+			Serial.print(F("OCR2A: ")); Serial.println(OCR2A, DEC);
+			Serial.print(F("Presclaler: ")); Serial.println(m_prescaler);
+
+			//Re-enable Interrupt
+			bitSet(TIMSK2,OCIE2A);
+		}
+	#endif
 }
