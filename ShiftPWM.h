@@ -40,7 +40,7 @@ extern const bool ShiftPWM_balanceLoad;
 	#if !defined(OCR2A)
 		#error "The avr you are using does not have a timer2"
 	#endif
-#else
+#elif defined(SHIFTPWM_USE_TIMER3)
 	#if !defined(OCR3A)
 		#error "The avr you are using does not have a timer3"
 	#endif
