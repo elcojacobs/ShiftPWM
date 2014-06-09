@@ -240,7 +240,13 @@ bool CShiftPWM::LoadNotTooHigh(void){
 	// This is with inverted outputs, which is worst case. Without inverting, it would be 42 per register.
 	float interruptDuration;
 	if(m_noSPI){
+#if defined(__AVR__)
 		interruptDuration = 96+108*(float) m_amountOfRegisters;
+#else
+		// TODO: perhaps this is too pessimistic?  Best to err on the
+		// side of caution to avoid overcommitting the CPU...
+		interruptDuration = 96+193*(float) m_amountOfRegisters;
+#endif
 	}
 	else{
 		interruptDuration = 97+43* (float) m_amountOfRegisters;
@@ -320,6 +326,11 @@ void CShiftPWM::Start(int ledFrequency, unsigned char maxBrightness){
 			InitTimer3();
 			break;
 		#endif
+		#if defined(__arm__) && defined(CORE_TEENSY)
+		default:
+			InitTimer1();
+			break;
+		#endif
 		}
 	}
 	else{
@@ -358,6 +369,17 @@ void CShiftPWM::InitTimer1(void){
 	bitSet(TIMSK1,OCIE1A);
 }
 #endif
+
+#if defined(__arm__) && defined(CORE_TEENSY)
+static IntervalTimer itimer;
+extern void ShiftPWM_handleInterrupt(void);
+
+void CShiftPWM::InitTimer1(void){
+	itimer.begin(ShiftPWM_handleInterrupt,
+	  1000000.0 / (m_ledFrequency * (m_maxBrightness+1)));
+}
+#endif
+
 
 #if defined(__AVR__) && defined(OCR2A)
 void CShiftPWM::InitTimer2(void){
@@ -478,7 +500,7 @@ void CShiftPWM::PrintInterruptLoad(void){
 		}
 		break;
 	#endif
-	#if defined(__AVR__) && defined(OCR2A)
+	#if defined(__AVR__) && defined(OCR3A)
 	case 3:
 		if(TIMSK3 & (1<<OCIE3A)){
 			// interrupt is enabled, continue
@@ -517,6 +539,10 @@ void CShiftPWM::PrintInterruptLoad(void){
 		bitClear(TIMSK3,OCIE3A);
 		break;
 	#endif
+	#if defined(__arm__) && defined(CORE_TEENSY)
+	default:
+		itimer.end();
+	#endif
 	}
 
 	// run with interrupt disabled
@@ -544,6 +570,10 @@ void CShiftPWM::PrintInterruptLoad(void){
 	case 3:
 		interrupt_frequency = (F_CPU/m_prescaler)/(OCR3A+1);
 		break;
+	#endif
+	#if defined(__arm__) && defined(CORE_TEENSY)
+	default:
+		interrupt_frequency = m_ledFrequency * (m_maxBrightness+1);
 	#endif
 	}
 
@@ -593,5 +623,8 @@ void CShiftPWM::PrintInterruptLoad(void){
 			bitSet(TIMSK2,OCIE2A);
 		}
 	#endif
+	#elif defined(__arm__) && defined(CORE_TEENSY)
+	itimer.begin(ShiftPWM_handleInterrupt,
+	  1000000.0 / (m_ledFrequency * (m_maxBrightness+1)));
 	#endif
 }

@@ -103,11 +103,15 @@ static inline void pwm_output_one_pin(volatile uint8_t * const clockPort, volati
     else{
       digitalWriteFast(dataBit, *(ledPtr)>counter );
     }
-    digitalWriteFast(*clockPort, HIGH);
+    digitalWriteFast(clockBit, HIGH);
 #endif
 }
 
+#if defined(__AVR__)
 static inline void ShiftPWM_handleInterrupt(void){
+#else
+void ShiftPWM_handleInterrupt(void){
+#endif
 	sei(); //enable interrupt nesting to prevent disturbing other interrupt functions (servo's for example).
 
 	// Look up which bit of which output register corresponds to the pin.
