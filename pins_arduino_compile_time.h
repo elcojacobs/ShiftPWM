@@ -305,6 +305,29 @@ const uint8_t digital_pin_to_bit_PGM_ct[] = {
 	2,  3,  4,  5,  6,  7
 };
 
+#elif defined(__MK20DX128__) || defined(__MK20DX256__)
+// for Teensy 3.x
+#ifndef SHIFTPWM_NOSPI
+#error "On Teensy 3.x, you must define SHIFTPWM_NOSPI, ShiftPWM_dataPin, ShiftPWM_clockPin"
+#endif
+#define SHIFTPWM_USE_DIGITALWRITEFAST
+volatile uint8_t * const port_to_output_PGM_ct[] = {
+        NULL
+};
+const uint8_t digital_pin_to_port_PGM_ct[] = {
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0
+};
+const uint8_t digital_pin_to_bit_PGM_ct[] = {
+	 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
+	10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+	20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+	30, 31, 32, 33
+};
+
+
 #else
 
 // these arrays map port names (e.g. port B) to the

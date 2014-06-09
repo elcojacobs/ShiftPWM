@@ -86,6 +86,7 @@ extern const bool ShiftPWM_balanceLoad;
 static inline void pwm_output_one_pin(volatile uint8_t * const clockPort, volatile uint8_t * const dataPort,\
                                   const uint8_t clockBit, const uint8_t dataBit, \
                                   unsigned char counter, unsigned char * ledPtr){
+#ifndef SHIFTPWM_USE_DIGITALWRITEFAST
     bitClear(*clockPort, clockBit);
     if(ShiftPWM_invertOutputs){
       bitWrite(*dataPort, dataBit, *(ledPtr)<=counter );
@@ -94,6 +95,16 @@ static inline void pwm_output_one_pin(volatile uint8_t * const clockPort, volati
       bitWrite(*dataPort, dataBit, *(ledPtr)>counter );
     }
     bitSet(*clockPort, clockBit);
+#else
+    digitalWriteFast(clockBit, LOW);
+    if(ShiftPWM_invertOutputs){
+      digitalWriteFast(dataBit, *(ledPtr)<=counter );
+    }
+    else{
+      digitalWriteFast(dataBit, *(ledPtr)>counter );
+    }
+    digitalWriteFast(*clockPort, HIGH);
+#endif
 }
 
 static inline void ShiftPWM_handleInterrupt(void){
@@ -123,7 +134,12 @@ static inline void ShiftPWM_handleInterrupt(void){
 	unsigned char * ledPtr=&ShiftPWM.m_PWMValues[ShiftPWM.m_amountOfOutputs];
 
 	// Write shift register latch clock low 
+	#ifndef SHIFTPWM_USE_DIGITALWRITEFAST
 	bitClear(*latchPort, latchBit);
+	#else
+	digitalWriteFast(latchBit, LOW);
+	#endif
+
 	unsigned char counter = ShiftPWM.m_counter;
 	
 	#ifndef SHIFTPWM_NOSPI
@@ -169,7 +185,11 @@ static inline void ShiftPWM_handleInterrupt(void){
 	#endif
 
 	// Write shift register latch clock high
+	#ifndef SHIFTPWM_USE_DIGITALWRITEFAST
 	bitSet(*latchPort, latchBit);
+	#else
+	digitalWriteFast(latchBit, HIGH);
+	#endif
 
 	if(ShiftPWM.m_counter<ShiftPWM.m_maxBrightness){
 		ShiftPWM.m_counter++; // Increase the counter
@@ -180,6 +200,7 @@ static inline void ShiftPWM_handleInterrupt(void){
 }
 
 // See table  11-1 for the interrupt vectors */
+#if defined(__AVR__)
 #if defined(SHIFTPWM_USE_TIMER3)
 	//Install the Interrupt Service Routine (ISR) for Timer3 compare and match A.
 	ISR(TIMER3_COMPA_vect) {
@@ -195,6 +216,7 @@ static inline void ShiftPWM_handleInterrupt(void){
 	ISR(TIMER1_COMPA_vect) {
 		ShiftPWM_handleInterrupt();
 	}
+#endif
 #endif
 
 // #endif for include once.

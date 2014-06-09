@@ -304,18 +304,23 @@ void CShiftPWM::Start(int ledFrequency, unsigned char maxBrightness){
 	}
 
 	if(LoadNotTooHigh() ){
-		if(m_timer==1){
+		switch (m_timer) {
+		#if defined(__AVR__) && defined(OCR1A)
+		case 1:
 			InitTimer1();
-		}
-		#if defined(USBCON)
-		else if(m_timer==3){
-			InitTimer3();
-		}
-		#else
-			else if(m_timer==2){
-				InitTimer2();
-			}
+			break;
 		#endif
+		#if defined(__AVR__) && defined(OCR2A)
+		case 2:
+			InitTimer2();
+			break;
+		#endif
+		#if defined(__AVR__) && defined(OCR3A)
+		case 3:
+			InitTimer3();
+			break;
+		#endif
+		}
 	}
 	else{
 		Serial.println(F("Interrupts are disabled because load is too high."));
@@ -323,6 +328,7 @@ void CShiftPWM::Start(int ledFrequency, unsigned char maxBrightness){
 	}
 }
 
+#if defined(__AVR__) && defined(OCR1A)
 void CShiftPWM::InitTimer1(void){
 	/* Configure timer1 in CTC mode: clear the timer on compare match
 	* See the Atmega328 Datasheet 15.9.2 for an explanation on CTC mode.
@@ -351,8 +357,9 @@ void CShiftPWM::InitTimer1(void){
 	/* Finally enable the timer interrupt, see datasheet  15.11.8) */
 	bitSet(TIMSK1,OCIE1A);
 }
+#endif
 
-#if defined(OCR2A)
+#if defined(__AVR__) && defined(OCR2A)
 void CShiftPWM::InitTimer2(void){
 	/* Configure timer2 in CTC mode: clear the timer on compare match
 	* See the Atmega328 Datasheet 15.9.2 for an explanation on CTC mode.
@@ -402,7 +409,7 @@ void CShiftPWM::InitTimer2(void){
 }
 #endif
 
-#if defined(OCR3A)
+#if defined(__AVR__) && defined(OCR3A)
 // Arduino Leonardo or Micro
 void CShiftPWM::InitTimer3(void){
 	/*
@@ -446,8 +453,9 @@ void CShiftPWM::PrintInterruptLoad(void){
 	unsigned long start1,end1,time1,start2,end2,time2,k;
 	double load, cycles_per_int, interrupt_frequency;
 
-
-	if(m_timer==1){
+	switch (m_timer) {
+	#if defined(__AVR__) && defined(OCR1A)
+	case 1:
 		if(TIMSK1 & (1<<OCIE1A)){
 			// interrupt is enabled, continue
 		}
@@ -456,30 +464,33 @@ void CShiftPWM::PrintInterruptLoad(void){
 			Serial.println(F("Interrupt is disabled."));
 			return;
 		}
-	}
-	#if defined(USBCON)
-		else if(m_timer==3){
-			if(TIMSK3 & (1<<OCIE3A)){
-				// interrupt is enabled, continue
-			}
-			else{
-				// interrupt is disabled
-				Serial.println(F("Interrupt is disabled."));
-				return;
-			}
-		}
-	#else
-		else if(m_timer==2){
-			if(TIMSK2 & (1<<OCIE2A)){
-				// interrupt is enabled, continue
-			}
-			else{
-				// interrupt is disabled
-				Serial.println(F("Interrupt is disabled."));
-				return;
-			}
-		}
+		break;
 	#endif
+	#if defined(__AVR__) && defined(OCR2A)
+	case 2:
+		if(TIMSK2 & (1<<OCIE2A)){
+			// interrupt is enabled, continue
+		}
+		else{
+			// interrupt is disabled
+			Serial.println(F("Interrupt is disabled."));
+			return;
+		}
+		break;
+	#endif
+	#if defined(__AVR__) && defined(OCR2A)
+	case 3:
+		if(TIMSK3 & (1<<OCIE3A)){
+			// interrupt is enabled, continue
+		}
+		else{
+			// interrupt is disabled
+			Serial.println(F("Interrupt is disabled."));
+			return;
+		}
+		break;
+	#endif
+	}
 
 	//run with interrupt enabled
 	start1 = micros();
@@ -490,19 +501,23 @@ void CShiftPWM::PrintInterruptLoad(void){
 	time1 = end1-start1;
 
 	//Disable Interrupt
-	if(m_timer==1){
+	switch (m_timer) {
+	#if defined(__AVR__) && defined(OCR1A)
+	case 1:
 		bitClear(TIMSK1,OCIE1A);
-	}
-	#if defined(USBCON)
-		else if(m_timer==3){
-			bitClear(TIMSK3,OCIE3A);
-		}
-	#else
-		else if(m_timer==2){
-			bitClear(TIMSK2,OCIE2A);
-		}
+		break;
 	#endif
-
+	#if defined(__AVR__) && defined(OCR2A)
+	case 2:
+		bitClear(TIMSK2,OCIE2A);
+		break;
+	#endif
+	#if defined(__AVR__) && defined(OCR3A)
+	case 3:
+		bitClear(TIMSK3,OCIE3A);
+		break;
+	#endif
+	}
 
 	// run with interrupt disabled
 	start2 = micros();
@@ -514,18 +529,24 @@ void CShiftPWM::PrintInterruptLoad(void){
 
 	// ready for calculations
 	load = (double)(time1-time2)/(double)(time1);
-	if(m_timer==1){
+	switch (m_timer) {
+	#if defined(__AVR__) && defined(OCR1A)
+	case 1:
 		interrupt_frequency = (F_CPU/m_prescaler)/(OCR1A+1);
-	}
-	#if defined(USBCON)
-		else if(m_timer==3){
-			interrupt_frequency = (F_CPU/m_prescaler)/(OCR3A+1);
-		}
-	#else
-		else if(m_timer==2){
-			interrupt_frequency = (F_CPU/m_prescaler)/(OCR2A+1);
-		}
+		break;
 	#endif
+	#if defined(__AVR__) && defined(OCR2A)
+	case 2:
+		interrupt_frequency = (F_CPU/m_prescaler)/(OCR2A+1);
+		break;
+	#endif
+	#if defined(__AVR__) && defined(OCR3A)
+	case 3:
+		interrupt_frequency = (F_CPU/m_prescaler)/(OCR3A+1);
+		break;
+	#endif
+	}
+
 	cycles_per_int = load*(F_CPU/interrupt_frequency);
 
 	//Ready to print information
@@ -534,7 +555,7 @@ void CShiftPWM::PrintInterruptLoad(void){
 	Serial.print(F("Interrupt frequency: ")); Serial.print(interrupt_frequency);   Serial.println(F(" Hz"));
 	Serial.print(F("PWM frequency: ")); Serial.print(interrupt_frequency/(m_maxBrightness+1)); Serial.println(F(" Hz"));
 
-
+	#if defined(__AVR__)
 	#if defined(USBCON)
 		if(m_timer==1){
 			Serial.println(F("Timer1 in use."));
@@ -571,5 +592,6 @@ void CShiftPWM::PrintInterruptLoad(void){
 			//Re-enable Interrupt
 			bitSet(TIMSK2,OCIE2A);
 		}
+	#endif
 	#endif
 }
