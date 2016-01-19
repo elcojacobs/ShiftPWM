@@ -305,10 +305,10 @@ const uint8_t digital_pin_to_bit_PGM_ct[] = {
 	2,  3,  4,  5,  6,  7
 };
 
-#elif defined(__MK20DX128__) || defined(__MK20DX256__)
-// for Teensy 3.x
+#elif defined(__arm__) && defined(CORE_TEENSY)
+// for Teensy 3.x and Teensy LC
 #ifndef SHIFTPWM_NOSPI
-#error "On Teensy 3.x, you must define SHIFTPWM_NOSPI, ShiftPWM_dataPin, ShiftPWM_clockPin"
+#error "On Teensy 3.x & LC, you must define SHIFTPWM_NOSPI, ShiftPWM_dataPin, ShiftPWM_clockPin"
 #endif
 #define SHIFTPWM_USE_DIGITALWRITEFAST
 volatile uint8_t * const port_to_output_PGM_ct[] = {
