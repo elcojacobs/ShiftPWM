@@ -33,7 +33,7 @@ CShiftPWM::CShiftPWM(int timerInUse, bool noSPI, int latchPin, int dataPin, int 
 	m_counter = 0;
 	m_pinGrouping = 1; // Default = RGBRGBRGB... PinGrouping = 3 means: RRRGGGBBBRRRGGGBBB...
 
-	unsigned char * m_PWMValues=0;
+	m_PWMValues=0;
 }
 
 CShiftPWM::~CShiftPWM() {
@@ -129,7 +129,7 @@ void CShiftPWM::SetAllRGB(unsigned char r,unsigned char g,unsigned char b){
 }
 
 void CShiftPWM::SetHSV(int led, unsigned int hue, unsigned int sat, unsigned int val, int offset){
-	unsigned char r,g,b;
+	unsigned char r=0,g=0,b=0;
 	unsigned int H_accent = hue/60;
 	unsigned int bottom = ((255 - sat) * val)>>8;
 	unsigned int top = val;
@@ -195,7 +195,7 @@ void CShiftPWM::OneByOneFast(void){
 void CShiftPWM::OneByOne_core(int delaytime){
 	int pin,brightness;
 	SetAll(0);
-	for(int pin=0;pin<m_amountOfOutputs;pin++){
+	for(pin=0;pin<m_amountOfOutputs;pin++){
 		for(brightness=0;brightness<m_maxBrightness;brightness++){
 			m_PWMValues[pin]=brightness;
 			delay(delaytime);

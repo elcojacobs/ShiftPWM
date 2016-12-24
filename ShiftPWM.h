@@ -122,8 +122,10 @@ void ShiftPWM_handleInterrupt(void){
 	// The compiler does not recognize the pins/ports as constant and sbi and cbi instructions cannot be used.
 
 
+	#ifndef SHIFTPWM_USE_DIGITALWRITEFAST
 	volatile uint8_t * const latchPort = port_to_output_PGM_ct[digital_pin_to_port_PGM_ct[ShiftPWM_latchPin]];
 	const uint8_t latchBit =  digital_pin_to_bit_PGM_ct[ShiftPWM_latchPin];
+	#endif
 
 	#ifdef SHIFTPWM_NOSPI
 	volatile uint8_t * const clockPort = port_to_output_PGM_ct[digital_pin_to_port_PGM_ct[ShiftPWM_clockPin]];
@@ -141,7 +143,7 @@ void ShiftPWM_handleInterrupt(void){
 	#ifndef SHIFTPWM_USE_DIGITALWRITEFAST
 	bitClear(*latchPort, latchBit);
 	#else
-	digitalWriteFast(latchBit, LOW);
+	digitalWriteFast(ShiftPWM_latchPin, LOW);
 	#endif
 
 	unsigned char counter = ShiftPWM.m_counter;
@@ -192,7 +194,7 @@ void ShiftPWM_handleInterrupt(void){
 	#ifndef SHIFTPWM_USE_DIGITALWRITEFAST
 	bitSet(*latchPort, latchBit);
 	#else
-	digitalWriteFast(latchBit, HIGH);
+	digitalWriteFast(ShiftPWM_latchPin, HIGH);
 	#endif
 
 	if(ShiftPWM.m_counter<ShiftPWM.m_maxBrightness){
