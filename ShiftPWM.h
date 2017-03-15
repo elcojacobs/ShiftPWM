@@ -97,13 +97,55 @@ static inline void pwm_output_one_pin(volatile uint8_t * const clockPort, volati
     bitSet(*clockPort, clockBit);
 #else
     digitalWriteFast(clockBit, LOW);
+#if F_CPU >= 120000000
+    asm("nop");
+#endif
+#if F_CPU >= 180000000
+    asm("nop");
+#endif
     if(ShiftPWM_invertOutputs){
       digitalWriteFast(dataBit, *(ledPtr)<=counter );
     }
     else{
       digitalWriteFast(dataBit, *(ledPtr)>counter );
     }
+#if F_CPU >= 96000000
+    asm("nop");
+#endif
+#if F_CPU >= 144000000
+    asm("nop");
+#endif
+#if F_CPU >= 192000000
+    asm("nop");
+#endif
     digitalWriteFast(clockBit, HIGH);
+#if F_CPU >= 48000000
+    asm("nop");
+#endif
+#if F_CPU >= 72000000
+    asm("nop");
+#endif
+#if F_CPU >= 96000000
+    asm("nop");
+#endif
+#if F_CPU >= 120000000
+    asm("nop");
+#endif
+#if F_CPU >= 144000000
+    asm("nop");
+#endif
+#if F_CPU >= 168000000
+    asm("nop");
+#endif
+#if F_CPU >= 180000000
+    asm("nop");
+#endif
+#if F_CPU >= 192000000
+    asm("nop");
+#endif
+#if F_CPU >= 216000000
+    asm("nop");
+#endif
 #endif
 }
 
