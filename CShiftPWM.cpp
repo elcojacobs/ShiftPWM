@@ -33,7 +33,7 @@ CShiftPWM::CShiftPWM(int timerInUse, bool noSPI, int latchPin, int dataPin, int 
 	m_counter = 0;
 	m_pinGrouping = 1; // Default = RGBRGBRGB... PinGrouping = 3 means: RRRGGGBBBRRRGGGBBB...
 
-	unsigned char * m_PWMValues=0;
+	m_PWMValues=0;
 }
 
 CShiftPWM::~CShiftPWM() {
@@ -129,7 +129,7 @@ void CShiftPWM::SetAllRGB(unsigned char r,unsigned char g,unsigned char b){
 }
 
 void CShiftPWM::SetHSV(int led, unsigned int hue, unsigned int sat, unsigned int val, int offset){
-	unsigned char r,g,b;
+	unsigned char r=0,g=0,b=0;
 	unsigned int H_accent = hue/60;
 	unsigned int bottom = ((255 - sat) * val)>>8;
 	unsigned int top = val;
@@ -195,7 +195,7 @@ void CShiftPWM::OneByOneFast(void){
 void CShiftPWM::OneByOne_core(int delaytime){
 	int pin,brightness;
 	SetAll(0);
-	for(int pin=0;pin<m_amountOfOutputs;pin++){
+	for(pin=0;pin<m_amountOfOutputs;pin++){
 		for(brightness=0;brightness<m_maxBrightness;brightness++){
 			m_PWMValues[pin]=brightness;
 			delay(delaytime);
@@ -240,7 +240,13 @@ bool CShiftPWM::LoadNotTooHigh(void){
 	// This is with inverted outputs, which is worst case. Without inverting, it would be 42 per register.
 	float interruptDuration;
 	if(m_noSPI){
+#if defined(__AVR__)
 		interruptDuration = 96+108*(float) m_amountOfRegisters;
+#else
+		// TODO: perhaps this is too pessimistic?  Best to err on the
+		// side of caution to avoid overcommitting the CPU...
+		interruptDuration = 96+193*(float) m_amountOfRegisters;
+#endif
 	}
 	else{
 		interruptDuration = 97+43* (float) m_amountOfRegisters;
@@ -304,18 +310,28 @@ void CShiftPWM::Start(int ledFrequency, unsigned char maxBrightness){
 	}
 
 	if(LoadNotTooHigh() ){
-		if(m_timer==1){
+		switch (m_timer) {
+		#if defined(__AVR__) && defined(OCR1A)
+		case 1:
 			InitTimer1();
-		}
-		#if defined(USBCON)
-		else if(m_timer==3){
-			InitTimer3();
-		}
-		#else
-			else if(m_timer==2){
-				InitTimer2();
-			}
+			break;
 		#endif
+		#if defined(__AVR__) && defined(OCR2A)
+		case 2:
+			InitTimer2();
+			break;
+		#endif
+		#if defined(__AVR__) && defined(OCR3A)
+		case 3:
+			InitTimer3();
+			break;
+		#endif
+		#if defined(__arm__) && defined(CORE_TEENSY)
+		default:
+			InitTimer1();
+			break;
+		#endif
+		}
 	}
 	else{
 		Serial.println(F("Interrupts are disabled because load is too high."));
@@ -323,6 +339,7 @@ void CShiftPWM::Start(int ledFrequency, unsigned char maxBrightness){
 	}
 }
 
+#if defined(__AVR__) && defined(OCR1A)
 void CShiftPWM::InitTimer1(void){
 	/* Configure timer1 in CTC mode: clear the timer on compare match
 	* See the Atmega328 Datasheet 15.9.2 for an explanation on CTC mode.
@@ -351,8 +368,20 @@ void CShiftPWM::InitTimer1(void){
 	/* Finally enable the timer interrupt, see datasheet  15.11.8) */
 	bitSet(TIMSK1,OCIE1A);
 }
+#endif
 
-#if defined(OCR2A)
+#if defined(__arm__) && defined(CORE_TEENSY)
+static IntervalTimer itimer;
+extern void ShiftPWM_handleInterrupt(void);
+
+void CShiftPWM::InitTimer1(void){
+	itimer.begin(ShiftPWM_handleInterrupt,
+	  1000000.0 / (m_ledFrequency * (m_maxBrightness+1)));
+}
+#endif
+
+
+#if defined(__AVR__) && defined(OCR2A)
 void CShiftPWM::InitTimer2(void){
 	/* Configure timer2 in CTC mode: clear the timer on compare match
 	* See the Atmega328 Datasheet 15.9.2 for an explanation on CTC mode.
@@ -402,7 +431,7 @@ void CShiftPWM::InitTimer2(void){
 }
 #endif
 
-#if defined(OCR3A)
+#if defined(__AVR__) && defined(OCR3A)
 // Arduino Leonardo or Micro
 void CShiftPWM::InitTimer3(void){
 	/*
@@ -446,8 +475,9 @@ void CShiftPWM::PrintInterruptLoad(void){
 	unsigned long start1,end1,time1,start2,end2,time2,k;
 	double load, cycles_per_int, interrupt_frequency;
 
-
-	if(m_timer==1){
+	switch (m_timer) {
+	#if defined(__AVR__) && defined(OCR1A)
+	case 1:
 		if(TIMSK1 & (1<<OCIE1A)){
 			// interrupt is enabled, continue
 		}
@@ -456,30 +486,33 @@ void CShiftPWM::PrintInterruptLoad(void){
 			Serial.println(F("Interrupt is disabled."));
 			return;
 		}
-	}
-	#if defined(USBCON)
-		else if(m_timer==3){
-			if(TIMSK3 & (1<<OCIE3A)){
-				// interrupt is enabled, continue
-			}
-			else{
-				// interrupt is disabled
-				Serial.println(F("Interrupt is disabled."));
-				return;
-			}
-		}
-	#else
-		else if(m_timer==2){
-			if(TIMSK2 & (1<<OCIE2A)){
-				// interrupt is enabled, continue
-			}
-			else{
-				// interrupt is disabled
-				Serial.println(F("Interrupt is disabled."));
-				return;
-			}
-		}
+		break;
 	#endif
+	#if defined(__AVR__) && defined(OCR2A)
+	case 2:
+		if(TIMSK2 & (1<<OCIE2A)){
+			// interrupt is enabled, continue
+		}
+		else{
+			// interrupt is disabled
+			Serial.println(F("Interrupt is disabled."));
+			return;
+		}
+		break;
+	#endif
+	#if defined(__AVR__) && defined(OCR3A)
+	case 3:
+		if(TIMSK3 & (1<<OCIE3A)){
+			// interrupt is enabled, continue
+		}
+		else{
+			// interrupt is disabled
+			Serial.println(F("Interrupt is disabled."));
+			return;
+		}
+		break;
+	#endif
+	}
 
 	//run with interrupt enabled
 	start1 = micros();
@@ -490,19 +523,27 @@ void CShiftPWM::PrintInterruptLoad(void){
 	time1 = end1-start1;
 
 	//Disable Interrupt
-	if(m_timer==1){
+	switch (m_timer) {
+	#if defined(__AVR__) && defined(OCR1A)
+	case 1:
 		bitClear(TIMSK1,OCIE1A);
-	}
-	#if defined(USBCON)
-		else if(m_timer==3){
-			bitClear(TIMSK3,OCIE3A);
-		}
-	#else
-		else if(m_timer==2){
-			bitClear(TIMSK2,OCIE2A);
-		}
+		break;
 	#endif
-
+	#if defined(__AVR__) && defined(OCR2A)
+	case 2:
+		bitClear(TIMSK2,OCIE2A);
+		break;
+	#endif
+	#if defined(__AVR__) && defined(OCR3A)
+	case 3:
+		bitClear(TIMSK3,OCIE3A);
+		break;
+	#endif
+	#if defined(__arm__) && defined(CORE_TEENSY)
+	default:
+		itimer.end();
+	#endif
+	}
 
 	// run with interrupt disabled
 	start2 = micros();
@@ -514,18 +555,28 @@ void CShiftPWM::PrintInterruptLoad(void){
 
 	// ready for calculations
 	load = (double)(time1-time2)/(double)(time1);
-	if(m_timer==1){
+	switch (m_timer) {
+	#if defined(__AVR__) && defined(OCR1A)
+	case 1:
 		interrupt_frequency = (F_CPU/m_prescaler)/(OCR1A+1);
-	}
-	#if defined(USBCON)
-		else if(m_timer==3){
-			interrupt_frequency = (F_CPU/m_prescaler)/(OCR3A+1);
-		}
-	#else
-		else if(m_timer==2){
-			interrupt_frequency = (F_CPU/m_prescaler)/(OCR2A+1);
-		}
+		break;
 	#endif
+	#if defined(__AVR__) && defined(OCR2A)
+	case 2:
+		interrupt_frequency = (F_CPU/m_prescaler)/(OCR2A+1);
+		break;
+	#endif
+	#if defined(__AVR__) && defined(OCR3A)
+	case 3:
+		interrupt_frequency = (F_CPU/m_prescaler)/(OCR3A+1);
+		break;
+	#endif
+	#if defined(__arm__) && defined(CORE_TEENSY)
+	default:
+		interrupt_frequency = m_ledFrequency * (m_maxBrightness+1);
+	#endif
+	}
+
 	cycles_per_int = load*(F_CPU/interrupt_frequency);
 
 	//Ready to print information
@@ -534,7 +585,7 @@ void CShiftPWM::PrintInterruptLoad(void){
 	Serial.print(F("Interrupt frequency: ")); Serial.print(interrupt_frequency);   Serial.println(F(" Hz"));
 	Serial.print(F("PWM frequency: ")); Serial.print(interrupt_frequency/(m_maxBrightness+1)); Serial.println(F(" Hz"));
 
-
+	#if defined(__AVR__)
 	#if defined(USBCON)
 		if(m_timer==1){
 			Serial.println(F("Timer1 in use."));
@@ -571,5 +622,9 @@ void CShiftPWM::PrintInterruptLoad(void){
 			//Re-enable Interrupt
 			bitSet(TIMSK2,OCIE2A);
 		}
+	#endif
+	#elif defined(__arm__) && defined(CORE_TEENSY)
+	itimer.begin(ShiftPWM_handleInterrupt,
+	  1000000.0 / (m_ledFrequency * (m_maxBrightness+1)));
 	#endif
 }

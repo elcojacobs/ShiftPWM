@@ -86,6 +86,7 @@ extern const bool ShiftPWM_balanceLoad;
 static inline void pwm_output_one_pin(volatile uint8_t * const clockPort, volatile uint8_t * const dataPort,\
                                   const uint8_t clockBit, const uint8_t dataBit, \
                                   unsigned char counter, unsigned char * ledPtr){
+#ifndef SHIFTPWM_USE_DIGITALWRITEFAST
     bitClear(*clockPort, clockBit);
     if(ShiftPWM_invertOutputs){
       bitWrite(*dataPort, dataBit, *(ledPtr)<=counter );
@@ -94,9 +95,65 @@ static inline void pwm_output_one_pin(volatile uint8_t * const clockPort, volati
       bitWrite(*dataPort, dataBit, *(ledPtr)>counter );
     }
     bitSet(*clockPort, clockBit);
+#else
+    digitalWriteFast(clockBit, LOW);
+#if F_CPU >= 120000000
+    asm("nop");
+#endif
+#if F_CPU >= 180000000
+    asm("nop");
+#endif
+    if(ShiftPWM_invertOutputs){
+      digitalWriteFast(dataBit, *(ledPtr)<=counter );
+    }
+    else{
+      digitalWriteFast(dataBit, *(ledPtr)>counter );
+    }
+#if F_CPU >= 96000000
+    asm("nop");
+#endif
+#if F_CPU >= 144000000
+    asm("nop");
+#endif
+#if F_CPU >= 192000000
+    asm("nop");
+#endif
+    digitalWriteFast(clockBit, HIGH);
+#if F_CPU >= 48000000
+    asm("nop");
+#endif
+#if F_CPU >= 72000000
+    asm("nop");
+#endif
+#if F_CPU >= 96000000
+    asm("nop");
+#endif
+#if F_CPU >= 120000000
+    asm("nop");
+#endif
+#if F_CPU >= 144000000
+    asm("nop");
+#endif
+#if F_CPU >= 168000000
+    asm("nop");
+#endif
+#if F_CPU >= 180000000
+    asm("nop");
+#endif
+#if F_CPU >= 192000000
+    asm("nop");
+#endif
+#if F_CPU >= 216000000
+    asm("nop");
+#endif
+#endif
 }
 
+#if defined(__AVR__)
 static inline void ShiftPWM_handleInterrupt(void){
+#else
+void ShiftPWM_handleInterrupt(void){
+#endif
 	sei(); //enable interrupt nesting to prevent disturbing other interrupt functions (servo's for example).
 
 	// Look up which bit of which output register corresponds to the pin.
@@ -107,8 +164,10 @@ static inline void ShiftPWM_handleInterrupt(void){
 	// The compiler does not recognize the pins/ports as constant and sbi and cbi instructions cannot be used.
 
 
+	#ifndef SHIFTPWM_USE_DIGITALWRITEFAST
 	volatile uint8_t * const latchPort = port_to_output_PGM_ct[digital_pin_to_port_PGM_ct[ShiftPWM_latchPin]];
 	const uint8_t latchBit =  digital_pin_to_bit_PGM_ct[ShiftPWM_latchPin];
+	#endif
 
 	#ifdef SHIFTPWM_NOSPI
 	volatile uint8_t * const clockPort = port_to_output_PGM_ct[digital_pin_to_port_PGM_ct[ShiftPWM_clockPin]];
@@ -123,7 +182,12 @@ static inline void ShiftPWM_handleInterrupt(void){
 	unsigned char * ledPtr=&ShiftPWM.m_PWMValues[ShiftPWM.m_amountOfOutputs];
 
 	// Write shift register latch clock low 
+	#ifndef SHIFTPWM_USE_DIGITALWRITEFAST
 	bitClear(*latchPort, latchBit);
+	#else
+	digitalWriteFast(ShiftPWM_latchPin, LOW);
+	#endif
+
 	unsigned char counter = ShiftPWM.m_counter;
 	
 	#ifndef SHIFTPWM_NOSPI
@@ -169,7 +233,11 @@ static inline void ShiftPWM_handleInterrupt(void){
 	#endif
 
 	// Write shift register latch clock high
+	#ifndef SHIFTPWM_USE_DIGITALWRITEFAST
 	bitSet(*latchPort, latchBit);
+	#else
+	digitalWriteFast(ShiftPWM_latchPin, HIGH);
+	#endif
 
 	if(ShiftPWM.m_counter<ShiftPWM.m_maxBrightness){
 		ShiftPWM.m_counter++; // Increase the counter
@@ -180,6 +248,7 @@ static inline void ShiftPWM_handleInterrupt(void){
 }
 
 // See table  11-1 for the interrupt vectors */
+#if defined(__AVR__)
 #if defined(SHIFTPWM_USE_TIMER3)
 	//Install the Interrupt Service Routine (ISR) for Timer3 compare and match A.
 	ISR(TIMER3_COMPA_vect) {
@@ -195,6 +264,7 @@ static inline void ShiftPWM_handleInterrupt(void){
 	ISR(TIMER1_COMPA_vect) {
 		ShiftPWM_handleInterrupt();
 	}
+#endif
 #endif
 
 // #endif for include once.
